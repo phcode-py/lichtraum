@@ -24,17 +24,17 @@ Your photographs, notes, and other saved material matter. We won't delete backen
 
 If you're working with a coding assistant, you can simply ask it to start a local preview. You can try out design changes there before deciding to upload them.
 
-For anyone setting it up manually, you'll need Node.js 22.13 or newer and pnpm (the project specifies its version in `package.json`). From the project folder, run:
+For anyone setting it up manually, you'll need Node.js 22.13 or newer. Copy `.env.example` to `.env.local` and fill in the Supabase project URL and publishable key, then run:
 
 ```sh
-npm run install:ci
+npm install
 npm run dev
 ```
 
-Open the local address printed in the terminal, usually http://localhost:5173. This starts a preview on your computer; it does not upload or publish the site. Existing hosted photographs and notes aren't automatically copied into a fresh local preview.
+Open http://localhost:3000. This starts a preview on your computer; it does not upload or publish the site. The local preview talks to the same Supabase project as the live site, so photographs and notes you add locally are real.
 
 ## A little further behind the scenes
 
-The interface lives in `app/` and `components/`. The project uses React, Vinext, and Cloudflare, with database and file storage for saved content.
+The interface lives in `app/` and `components/`. The project uses Next.js, hosted on Vercel, with Supabase for sign-in, the database, and photo storage.
 
-For the original setup and hosting reference, see [the development guide](docs/development.md). Coding assistants should also read [AGENTS.md](AGENTS.md) for our design priorities, storage safeguards, and preview-before-upload workflow.
+For setup and hosting details, see [the development guide](docs/development.md). Coding assistants should also read [AGENTS.md](AGENTS.md) for our design priorities, storage safeguards, and preview-before-upload workflow.
