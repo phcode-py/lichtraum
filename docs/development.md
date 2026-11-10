@@ -16,11 +16,11 @@ Lichtraum is a Next.js app. Vercel hosts it; Supabase provides sign-in, the Post
 | API routes | `app/api/photos`, `app/api/community` |
 | Supabase clients | `lib/supabase/server.ts`, `lib/supabase/client.ts` |
 | Session refresh | `proxy.ts` (Next.js 16's renamed middleware) |
-| Sign-in | `app/signin` (email magic link), `app/auth/callback`, `app/auth/signout` |
+| Sign-in | `app/signin` (password, or email link as fallback), `app/password`, `app/auth/callback`, `app/auth/signout` |
 | Database and storage setup | `supabase/migrations/` |
 
 - **The whole site is private.** `proxy.ts` sends signed-out visitors to `/signin` (APIs answer 401); only `/signin` and `/auth/*` are open.
-- **Sign-in** uses Supabase email links. The optional name entered on the first sign-in is stored as `full_name` and shown beside photographs and notes.
+- **Sign-in** is email + password (`app/signin`). Accounts are confirmed automatically (Supabase setting `mailer_autoconfirm`), so no email is sent. "Forgot or no password" sends a one-time email link that lands on `/password` to choose a new one. The name entered at sign-up is stored as `full_name` and shown beside photographs and notes.
 - **Photographs** upload straight from the browser into the private `photos` storage bucket (`<user id>/<uuid>`), because Vercel limits request bodies to 4.5 MB. The browser then posts the photo's details to `/api/photos`. Images are shown through signed links that last six hours.
 - **Who sees what** is enforced by row-level security in the database: your own photographs plus those marked as shared; everyone signed in can read and write correspondence.
 
@@ -30,7 +30,7 @@ Lichtraum is a Next.js app. Vercel hosts it; Supabase provides sign-in, the Post
 2. Authentication → URL Configuration: set the **Site URL** to the Vercel address and add `http://localhost:3000/**` and `https://<your-vercel-domain>/**` to **Redirect URLs**.
 3. Optional: once everyone has an account, turn off new sign-ups (Authentication → Sign In / Providers) so the atlas stays private to you.
 
-Supabase's built-in email sender is rate-limited to a few emails per hour. That is fine for a small group; add custom SMTP under Authentication → Emails if you need more.
+Supabase's built-in email sender is limited to 2 emails per hour (only used for forgotten passwords). That is fine for a small group; add custom SMTP under Authentication → Emails if you need more.
 
 ## Vercel setup
 
