@@ -17,7 +17,7 @@
 
 1. Make requested changes locally.
 2. Show a local preview of the result before asking to upload. For visual or interaction changes, run and show the local site. For documentation changes, show the edited document or a rendered preview.
-3. Ask exactly: "Should we upload this to github?"
+3. Ask exactly: "Should we upload this change?"
 4. Wait for a yes. Do not push before that answer.
 5. Once approved, push the reviewed changes directly to `main`. Do not require collaborators to navigate branches or pull requests.
 

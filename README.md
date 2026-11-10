@@ -16,7 +16,7 @@ This is our place to collect those observations, put them on a map, and keep a c
 
 You don't need to know how to code or use GitHub to contribute. Describe what you would like to change: a quieter layout, a different typeface, more room for photographs, or something that simply doesn't feel right yet.
 
-We'll make the change locally first and show you a preview. When you're happy with it, we'll ask: **"Should we upload this to github?"** Only after you say yes will the reviewed changes be uploaded directly to `main`, the shared version of the project.
+We'll make the change locally first and show you a preview. When you're happy with it, we'll ask: **"Should we upload this change?"** Only after you say yes will the reviewed changes be uploaded directly to `main`, the shared version of the project.
 
 Your photographs, notes, and other saved material matter. We won't delete backend content or change existing storage without your explicit instruction. Any proposed action that affects existing storage will be flagged as risky before it happens.
 
