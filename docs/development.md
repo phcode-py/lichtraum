@@ -17,11 +17,17 @@ Lichtraum is a Next.js app. Vercel hosts it; Supabase provides sign-in, the Post
 | Supabase clients | `lib/supabase/server.ts`, `lib/supabase/client.ts` |
 | Session refresh | `proxy.ts` (Next.js 16's renamed middleware) |
 | Sign-in | `app/signin` (password, or email link as fallback), `app/password`, `app/auth/callback`, `app/auth/signout` |
+| Walk recording (GPS, impressions) | `components/walk-recorder.tsx`, `app/api/walks` |
+| Walks tab | `components/walk-journal.tsx` |
+| Editing photos | `components/photo-edit.tsx`, `PATCH /api/photos/[id]` |
 | Database and storage setup | `supabase/migrations/` |
 
 - **The whole site is private.** `proxy.ts` sends signed-out visitors to `/signin` (APIs answer 401); only `/signin` and `/auth/*` are open.
 - **Sign-in** is email + password (`app/signin`). Accounts are confirmed automatically (Supabase setting `mailer_autoconfirm`), so no email is sent. "Forgot or no password" sends a one-time email link that lands on `/password` to choose a new one. The name entered at sign-up is stored as `full_name` and shown beside photographs and notes.
 - **Photographs** upload straight from the browser into the private `photos` storage bucket (`<user id>/<uuid>`), because Vercel limits request bodies to 4.5 MB. The browser then posts the photo's details to `/api/photos`. Images are shown through signed links that last six hours.
+- **Walks** are recorded in the browser with `navigator.geolocation.watchPosition`. Fixes weaker than 40 m, closer than 6 m to the last point, or faster than 43 km/h are skipped. Points are saved every 15 s (and when the page is hidden) to `walks.path` as `[lng, lat, unix seconds, segment]`; each pause starts a new segment. Unsaved points are kept in `localStorage` until they reach the server. The screen is kept awake with the Wake Lock API while recording. A walk left “recording” (e.g. Safari closed the tab) reopens paused on the next visit.
+- **Impressions** are photos with `walk` set to the walk id. The position is taken at the moment “Add impression” is tapped; the camera opens via `<input capture>`. Images are shrunk to 2400 px JPEG in the browser before upload.
+- **On iPhone**, GPS only runs while the page is open and the screen is on. Adding the site to the Home Screen (Share › Add to Home Screen) opens it full-screen without Safari's bars.
 - **Who sees what** is enforced by row-level security in the database: your own photographs plus those marked as shared; everyone signed in can read and write correspondence.
 
 ## Supabase setup (once per project)

@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
 }
 
 function isPublic(path: string) {
-  return path === "/signin" || path.startsWith("/auth/");
+  return path === "/signin" || path.startsWith("/auth/") || path === "/manifest.webmanifest" || /^\/(apple-touch-icon|icon-\d+)\.png$/.test(path);
 }
 
 export const config = {

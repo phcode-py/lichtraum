@@ -116,3 +116,82 @@ body,button,input,select,textarea,h1,h2,h3,.maplibregl-map,.custom-cursor,.mapli
 /* Header without its box: brand, navigation and action sit directly on the page. */
 .topbar{background:transparent;border-bottom:0}
 .photo-fields-row:has(>:only-child){grid-template-columns:1fr}
+
+/* ---------- Walks: start button, list, recorder ---------- */
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.topbar-actions .primary{border:0;background:var(--blue);font-size:8px;letter-spacing:.2px;text-transform:none;min-height:36px;padding:11px 14px;font-weight:500}
+.walk-start{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border:1px solid var(--ink);font-size:8px;letter-spacing:.2px;font-weight:500;background:transparent}
+.walk-start-dot{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.walk-start:hover:not(:disabled){background:var(--ink);color:#fff}
+@media(max-width:720px){
+ .topbar-actions{gap:6px}
+ .walk-start{min-height:38px;padding:0 13px;font-size:11px;background:var(--ink);color:#fff}
+ .walk-start-dot{background:#fff}
+ .topbar-actions .primary{min-height:38px;width:38px;padding:0}
+ .topbar-actions .primary span{display:none}
+ .topbar-actions .primary svg{width:17px;height:17px}
+}
+
+.walk-journal .primary.walk-start-inline,.walk-journal .primary.walk-continue{width:100%;min-height:42px;font-size:9px;text-transform:none;letter-spacing:.2px;font-weight:500;gap:9px;margin-bottom:28px}
+.walk-list>.section-label{border-top:1px solid #e0e0d8;padding-top:16px;margin:0 0 4px}
+.walk-row{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:15px 0;border-bottom:1px solid #e6e6de}
+.walk-row>div{flex:1;min-width:0}
+.walk-row strong{display:block;font-size:12px;font-weight:500;letter-spacing:-.15px}
+.walk-row p{font-size:8px;color:#929288;margin:6px 0 0;line-height:1.6}
+.walk-row>div>span{display:block;font-size:6px;letter-spacing:.7px;text-transform:uppercase;color:#a0a095;margin-top:6px}
+.walk-row>svg{color:#aaa99f;margin-top:3px;flex-shrink:0}
+.walk-row:hover strong{color:var(--blue)}
+.walk-back{display:inline-flex;align-items:center;gap:6px;font-size:8px;letter-spacing:.4px;color:#8b8b81;margin-bottom:22px}
+.walk-empty-note{font-size:9px;color:#9a9a8f;line-height:1.7;margin:14px 0}
+@media(max-width:720px){.walk-row strong{font-size:15px}.walk-row p{font-size:11px}.walk-row>div>span{font-size:8px}.walk-back{font-size:11px}.walk-empty-note{font-size:12px}.walk-journal .primary.walk-start-inline,.walk-journal .primary.walk-continue{min-height:48px;font-size:12px}}
+
+/* Map markers */
+.walk-you{width:18px;height:18px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 1px var(--blue),0 0 0 12px rgba(36,70,232,.14)}
+.walk-pin{display:block;width:38px;height:38px;background:#ddd center/cover no-repeat;border:2px solid #fff;outline:1px solid #000}
+
+/* Recorder: a quiet full-screen map with one sheet of controls. */
+.walk-rec{position:fixed;inset:0;z-index:3000;background:#fff;-webkit-user-select:none;user-select:none}
+.walk-rec .walk-rec-map{position:absolute;inset:0;width:100%;height:100%}
+.walk-rec-top{position:absolute;z-index:2;top:calc(env(safe-area-inset-top) + 14px);left:16px;right:16px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.walk-rec-state,.walk-rec-gps{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #deded5;padding:9px 12px;font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--ink)}
+.walk-rec-gps{text-transform:none;letter-spacing:.1px;color:#77776b}
+.walk-rec-state i{width:8px;height:8px;border-radius:50%;background:var(--blue);animation:walk-pulse 1.6s ease-in-out infinite}
+.walk-rec[data-status=paused] .walk-rec-state i,.walk-rec[data-status=ended] .walk-rec-state i{animation:none;background:#b9b9af}
+@keyframes walk-pulse{50%{opacity:.25}}
+.walk-rec-locate{position:absolute;z-index:2;right:16px;bottom:calc(env(safe-area-inset-bottom) + 232px);width:44px;height:44px;display:grid;place-items:center;background:#fff;border:1px solid #deded5}
+.walk-rec-sheet{position:absolute;z-index:2;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #deded5;padding:18px 18px calc(env(safe-area-inset-bottom) + 16px)}
+.walk-rec-stats{display:grid;grid-template-columns:1.25fr 1fr 1fr;margin-bottom:16px}
+.walk-rec-stats>div+div{border-left:1px solid #ecece5;padding-left:14px}
+.walk-rec-stats strong{display:block;font-size:30px;font-weight:400;letter-spacing:-1.3px;line-height:1;font-variant-numeric:tabular-nums}
+.walk-rec-stats span{display:block;font-size:9px;letter-spacing:.9px;text-transform:uppercase;color:#929288;margin-top:8px}
+.walk-rec .primary.walk-rec-impression{width:100%;min-height:56px;border:0;background:var(--blue);color:#fff;font-size:14px;letter-spacing:.1px;text-transform:none;font-weight:500;gap:10px}
+.walk-rec .primary.walk-rec-impression:hover:not(:disabled){color:#fff}
+.walk-rec-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.walk-rec-actions button{min-height:50px;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #deded5;font-size:13px;color:var(--ink);background:#fff}
+.walk-rec-actions button.armed{background:var(--ink);border-color:var(--ink);color:#fff}
+.walk-rec-actions button.armed:hover{color:#fff}
+.walk-rec-name{display:block;margin-bottom:18px}
+.walk-rec-name span{display:block;font-size:9px;letter-spacing:.9px;text-transform:uppercase;color:#929288}
+.walk-rec-name input{display:block;width:100%;border:0;border-bottom:1px solid var(--ink);padding:8px 0 10px;font-size:24px;letter-spacing:-.8px;background:transparent;border-radius:0;-webkit-user-select:text;user-select:text}
+.walk-rec-name input:focus-visible{outline:0;border-color:var(--blue)}
+.walk-rec-message{position:absolute;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 220px);background:var(--ink);color:#fff;padding:11px 15px;font-size:12px;max-width:calc(100% - 40px);width:max-content;text-align:center}
+.walk-rec .maplibregl-ctrl-bottom-right{bottom:auto;top:calc(env(safe-area-inset-top) + 60px)}
+@media(min-width:721px){
+ .walk-rec-sheet{left:24px;right:auto;bottom:24px;width:360px;border:1px solid #deded5}
+ .walk-rec-locate{bottom:auto;top:24px;right:24px}
+ .walk-rec-message{bottom:auto;top:24px}
+ .walk-rec .maplibregl-ctrl-bottom-right{top:auto;bottom:0}
+}
+
+/* Editing a photograph */
+.detail-owner-actions{display:flex;gap:16px}
+.detail-owner-actions .edit{display:flex;gap:5px;align-items:center;font-size:9px;color:var(--ink)}
+.photo-edit-image{position:relative;display:block;cursor:pointer;border-bottom:1px solid #deded5}
+.photo-edit-image img{display:block;width:100%;height:225px;object-fit:cover}
+.photo-edit-image span{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:7px;background:#fff;padding:9px 11px;font-size:9px;border:1px solid #deded5}
+.photo-edit-image input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-edit .field:first-of-type{margin-top:12px}
+.photo-edit-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:20px}
+.photo-edit-actions>button:first-child{font-size:9px;color:#77776b}
+.photo-edit-actions .primary{border:0;text-transform:none;letter-spacing:.2px;font-weight:500;font-size:9px;min-height:36px}
+@media(max-width:720px){.photo-edit-image img{height:190px}.photo-edit-image span,.detail-owner-actions .edit,.photo-edit-actions>button:first-child,.photo-edit-actions .primary{font-size:12px}.photo-edit-actions .primary{min-height:44px}}
