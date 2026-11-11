@@ -19,6 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return Response.json({ error: 'Invalid request.' }, { status: 400 }); }
+  if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'Invalid request.'},{status:400});
 
   if (body.points !== undefined) {
     if (!validPoints(body.points)) return Response.json({ error: 'Invalid points.' }, { status: 400 });
@@ -33,7 +34,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     update.status = body.status;
     if (body.status === 'ended') update.ended_at = new Date().toISOString();
   }
-  if (typeof body.title === 'string') update.title = body.title.trim().slice(0, 100);
+  if (typeof body.title === 'string') { if(!body.title.trim()||body.title.trim().length>100)return Response.json({error:'Give the walk a name of up to 100 characters.'},{status:400}); update.title=body.title.trim(); }
+  if (typeof body.shared === 'boolean') update.shared=body.shared;
   if (Number.isFinite(Number(body.duration)) && body.points === undefined) update.duration_s = Math.max(0, Math.round(Number(body.duration)));
 
   let row: WalkRow | null = null;
@@ -50,4 +52,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   // Points can be large; the recorder keeps its own copy, so only send them back when asked.
   const walk = toWalk(row, user.id);
   return Response.json({ walk: body.withPath ? walk : { ...walk, path: [] } });
+}
+
+// Removes only the caller’s finished walk. Photographs and stored image files are kept.
+export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
+ if(isCrossOrigin(request))return new Response('Forbidden',{status:403});
+ const db=await createClient(),user=await getSessionUser(db);
+ if(!user)return Response.json({error:'Sign in required.'},{status:401});
+ const {id}=await params;
+ const {data:walk,error:readError}=await db.from('walks').select('id,status').eq('id',id).eq('owner',user.id).maybeSingle();
+ if(readError)return Response.json({error:'The walk could not be loaded.'},{status:503});
+ if(!walk)return Response.json({error:'Walk not found.'},{status:404});
+ if(walk.status!=='ended')return Response.json({error:'Finish this walk before removing it.'},{status:409});
+ const {data,error}=await db.from('walks').delete().eq('id',id).eq('owner',user.id).eq('status','ended').select('id').maybeSingle();
+ if(error)return Response.json({error:'The walk could not be removed. Please try again.'},{status:503});
+ if(!data)return Response.json({error:'The walk was not removed. Refresh and try again.'},{status:409});
+ return Response.json({ok:true});
 }

@@ -1,5 +1,6 @@
 'use client';
 import {ArrowLeft,ArrowUpRight,Footprints} from 'lucide-react';
+import WalkActions from './walk-actions';
 import {formatDuration,type Walk} from '@/lib/walks';
 
 type Impression={id:string;title:string;url:string;createdAt:number;place:string;walk?:string};
@@ -8,7 +9,7 @@ const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',mont
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
-export default function WalkJournal({walks,impressions,selected,loading,onSelect,onStart,onContinue,onImpression}:{walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onImpression:(p:Impression)=>void}){
+export default function WalkJournal({walks,impressions,selected,loading,onSelect,onStart,onContinue,onImpression,onSaved,onRemoved}:{walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onImpression:(p:Impression)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
  const walk=walks.find(w=>w.id===selected);
 
  if(walk){
@@ -17,7 +18,7 @@ export default function WalkJournal({walks,impressions,selected,loading,onSelect
   return <div className="walk-journal">
    <button className="walk-back" onClick={()=>onSelect(null)}><ArrowLeft size={13}/>All walks</button>
    <div className="eyebrow"><span className="live-dot"/> WALK / {String(n).padStart(3,'0')} · {day(walk.startedAt).toUpperCase()}</div>
-   <h2>{walk.title||'Untitled walk'}.</h2>
+   <div className="walk-title-row"><h2>{walk.title||'Untitled walk'}.</h2><WalkActions walk={walk} onSaved={onSaved} onRemoved={onRemoved}/></div>
    <p className="walk-summary">{walk.mine?'Your walk':`Walked by ${walk.author}`} · started {time(walk.startedAt)}{walk.endedAt?`, ended ${time(walk.endedAt)}`:''}</p>
    <div className="walk-stats"><div><strong>{(walk.distance/1000).toFixed(1)}</strong><span>KM / ROUTE</span></div><div><strong>{Math.round(walk.duration/60)}</strong><span>MIN / WALKING</span></div><div><strong>{String(pins.length).padStart(2,'0')}</strong><span>IMPRESSIONS</span></div></div>
    {walk.mine&&walk.status!=='ended'&&<button className="primary walk-continue" onClick={()=>onContinue(walk)}>Continue this walk <ArrowUpRight size={14}/></button>}
@@ -46,14 +47,14 @@ export default function WalkJournal({walks,impressions,selected,loading,onSelect
    <div className="section-label"><span>ALL WALKS</span><span>{walks.length}</span></div>
    {loading&&!walks.length&&<p className="walk-empty-note">Loading walks…</p>}
    {!loading&&!walks.length&&<p className="walk-empty-note">No walks yet. Start one when you head out.</p>}
-   {walks.map((w,i)=>{const count=impressions.filter(p=>p.walk===w.id).length;return <button key={w.id} className="walk-row" onClick={()=>onSelect(w.id)}>
+   {walks.map((w,i)=>{const count=impressions.filter(p=>p.walk===w.id).length;return <div key={w.id} className="walk-row-with-actions"><button className="walk-row" onClick={()=>onSelect(w.id)}>
     <span className="walk-stop-index">{String(walks.length-i).padStart(2,'0')}</span>
     <div><strong>{w.title||'Untitled walk'}</strong>
      <p>{day(w.startedAt)} · {(w.distance/1000).toFixed(1)} km · {formatDuration(w.duration)} · {count} {count===1?'impression':'impressions'}</p>
      <span>{w.status!=='ended'?(w.mine?'In progress':`${w.author} · in progress`):w.mine?'Your walk':w.author}</span>
     </div>
     <ArrowUpRight size={13}/>
-   </button>;})}
+   </button><WalkActions walk={w} onSaved={onSaved} onRemoved={onRemoved}/></div>;})}
   </section>
  </div>;
 }

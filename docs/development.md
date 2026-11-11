@@ -59,3 +59,15 @@ Papers are shared by default. Unchecking “shared with everyone” creates a pr
 New paper positions are stored with the paper. Each browser remembers the two built-in receipt positions in the new `lichtraum-correspondence-fixed-papers-v1` local storage key. Existing preview storage is not cleared or replaced. Drag receipt handles, or focus them and use arrow keys; scroll the board to explore, and choose “first papers” to return to its beginning.
 
 The board refreshes every 20 seconds and each paper’s entries every 15 seconds while the page is visible. It is a shared board, not a live cursor or presence service. The newest 200 papers and newest 100 entries per paper are currently loaded.
+
+## Map orientation and sun study
+
+The map supports flat bearing rotation (right-drag or Control-drag on desktop, two-finger rotation on touch screens). Pitch and roll stay disabled. The north arrow follows the bearing; click it to face north. The circle-and-dot control restores the original Zürich center, zoom and north orientation.
+
+The sun button opens an adjustable, browser-calculated solar study for central Zürich. It uses the approximate equations in NOAA's [General Solar Position Calculations](https://gml.noaa.gov/grad/solcalc/solareqns.PDF). Azimuth is clockwise from true north; elevation is geometric height above the horizon. Sunrise/set use the conventional −0.833° threshold. Buildings, terrain, weather and local obstruction shadows are not modeled. The fixed-radius map arc is a schematic direction guide, not a distance or a shadow length. Date/time controls use Europe/Zurich and handle 23/25-hour daylight-saving days. Run the reference geometry and time-zone checks with `node --experimental-strip-types --test tests/sun.test.mjs` (Node 22+).
+
+## Managing walks and photographs
+
+Pencil and trash icons appear only for the current user's items. Walk edits change the name and sharing. Walk removal requires an explicit confirmation and only removes the owner's finished walk record and route; photographs and stored files are retained in the light atlas. Active walks must be finished first. The endpoint checks ownership and status again when deleting.
+
+`supabase/migrations/20261111020000_walk_removal_policy.sql` prepares the owner-only delete policy for finished walks. It has not been applied by local development. Applying the policy does not itself delete records, but enables the confirmed removal action; review it separately from code upload. Existing photograph edit/remove endpoints remain owner-restricted. Photo removal confirmation states that the record and photo file are permanently removed.

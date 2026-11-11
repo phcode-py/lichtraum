@@ -16,9 +16,9 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel}:{
 
  async function save(e:React.FormEvent){
   e.preventDefault();setBusy(true);setError('');
-  const supabase=createClient();let key='';
+  let key='';
   try{
-   if(file){const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadImage(supabase,user.id,await prepareImage(file));}
+   if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadImage(supabase,user.id,await prepareImage(file));}
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,caption,category,shared,...(key?{key}:{})})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'Your changes could not be saved.');
    onSaved({...photo,...data.photo});
