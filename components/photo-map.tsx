@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import type {Map,Marker,StyleSpecification,GeoJSONSource,LngLatBoundsLike} from 'maplibre-gl';
-import {LocateFixed,Plus} from 'lucide-react';
+import {ArrowUp} from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 type Photo={id:string;title:string;place:string;lat:number;lng:number;url:string;caption:string;createdAt:number;source?:string};
 export const mapStyle:StyleSpecification={version:8,sources:{city:{type:'vector',url:'https://tiles.openfreemap.org/planet'}},layers:[
@@ -38,5 +38,5 @@ export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint
  },[ready,activeRoute]);
  useEffect(()=>{if(reset)map.current?.flyTo({center:[8.5399,47.3709],zoom:14.7,duration:700})},[reset]);
 
- return <><div className={'map-canvas '+(picking?'picking':'')} data-cursor={picking?'pin':'drag'} ref={element} aria-label="Interactive map of Zürich"/><div className="map-tools"><button aria-label="Zoom in" onClick={()=>map.current?.zoomIn()}><Plus size={19}/></button><button aria-label="Zoom out" onClick={()=>map.current?.zoomOut()}><span className="minus">−</span></button><span/><button aria-label="Recenter on Zürich" onClick={()=>map.current?.flyTo({center:[8.5399,47.3709],zoom:14.7})}><LocateFixed size={19}/></button></div>{mapError&&<div className="map-error">Map unavailable. Check your connection and reload.</div>}</>;
+ return <><div className={'map-canvas '+(picking?'picking':'')} data-cursor={picking?'pin':'drag'} ref={element} aria-label="Interactive map of Zürich"/><div className="map-tools" role="group" aria-label="Map controls"><button aria-label="Zoom in" title="Zoom in" onClick={()=>map.current?.zoomIn()}><span aria-hidden="true">+</span></button><button aria-label="Zoom out" title="Zoom out" onClick={()=>map.current?.zoomOut()}><span aria-hidden="true">−</span></button><button aria-label="Point map north" title="North" onClick={()=>map.current?.easeTo({bearing:0,pitch:0})}><ArrowUp aria-hidden="true"/></button></div>{mapError&&<div className="map-error">Map unavailable. Check your connection and reload.</div>}</>;
 }

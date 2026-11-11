@@ -47,3 +47,15 @@ Supabase's built-in email sender is limited to 2 emails per hour (only used for 
 ## Database changes
 
 Add a new, timestamped SQL file in `supabase/migrations/` rather than editing an applied one. Never write a migration that drops or rewrites existing data without explicit agreement.
+
+## Correspondence papers
+
+The correspondence board keeps the original conversation in **the room**, using the existing `messages` table and `/api/community`. The contributors receipt uses the same existing read-only counts.
+
+New papers use `/api/papers` and `/api/papers/[id]/entries`. Before enabling them in production, apply `supabase/migrations/20261111010000_correspondence_papers.sql`. This migration creates only `correspondence_papers`, `correspondence_entries`, their index and access policies; it does not modify existing tables, records or photo storage. Preparing this file does not apply it.
+
+Papers are shared by default. Unchecking “shared with everyone” creates a private paper. Row-level security limits private papers and their entries to their owner. Shared papers accept entries from signed-in people. Entries are append-only; the board has no delete action. Only paper positions can be updated, including by other signed-in people on shared papers; column-level grants protect the title, author, owner and sharing setting.
+
+New paper positions are stored with the paper. Each browser remembers the two built-in receipt positions in the new `lichtraum-correspondence-fixed-papers-v1` local storage key. Existing preview storage is not cleared or replaced. Drag receipt handles, or focus them and use arrow keys; scroll the board to explore, and choose “first papers” to return to its beginning.
+
+The board refreshes every 20 seconds and each paper’s entries every 15 seconds while the page is visible. It is a shared board, not a live cursor or presence service. The newest 200 papers and newest 100 entries per paper are currently loaded.
