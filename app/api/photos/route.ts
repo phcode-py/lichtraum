@@ -1,4 +1,6 @@
 import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
+import {emptyTags,parseTags} from '@/lib/gallery';
+import {readPhotoTags,writePhotoTags} from '@/lib/photo-tags-server';
 import {fetchWeather,type PhotoConditions} from '@/lib/photo-conditions';
 import {solarPosition} from '@/lib/sun';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
@@ -9,19 +11,21 @@ export async function GET() {
   const user = await getSessionUser(supabase);
   if (!user) return Response.json({ error: 'Sign in to see your photos.' }, { status: 401 });
   // Row-level security limits this to your own photos plus shared ones.
-  const { data: rows, error } = await supabase.from('photos').select('*').order('created_at', { ascending: false });
-  if (error) return Response.json({ error: 'Your collection could not be loaded. Please try again.' }, { status: 503 });
-  const urls = new Map<string, string>();
-  await Promise.all(['photos', 'videos'].map(async bucket => {
-    const keys = (rows as PhotoRow[]).filter(r => mediaBucket(r.key) === bucket).map(r => r.key);
-    if (!keys.length) return;
-    const {data: signed} = await supabase.storage.from(bucket).createSignedUrls(keys, URL_TTL);
-    signed?.forEach(s => { if(s.path && s.signedUrl) urls.set(s.path, s.signedUrl); });
-  }));
-  const {data: snapshots,error: conditionsError}=await supabase.from('photo_conditions').select('photo_id,snapshot');
-  const conditions=new Map((snapshots??[]).map(r=>[r.photo_id,r.snapshot as PhotoConditions]));
+  const rows:PhotoRow[]=[];
+  // Read every visible photo rather than silently stopping at the server's row cap.
+  for(let offset=0;;offset+=500){
+    const {data,error}=await supabase.from('photos').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}).range(offset,offset+499);
+    if(error)return Response.json({error:'Your collection could not be loaded. Please try again.'},{status:503});
+    rows.push(...data as PhotoRow[]);if(data.length<500)break;
+  }
+  const urls=new Map<string,string>();
+  await Promise.all(['photos','videos'].map(async bucket=>{const keys=rows.filter(r=>mediaBucket(r.key)===bucket).map(r=>r.key);for(let offset=0;offset<keys.length;offset+=100){const {data:signed}=await supabase.storage.from(bucket).createSignedUrls(keys.slice(offset,offset+100),URL_TTL);signed?.forEach(s=>{if(s.path&&s.signedUrl)urls.set(s.path,s.signedUrl)});}}));
+  const conditions=new Map<string,PhotoConditions>();let conditionsAvailable=true;
+  if(!rows.length){const {error}=await supabase.from('photo_conditions').select('photo_id').limit(0);conditionsAvailable=!error;}
+  for(let offset=0;offset<rows.length;offset+=100){const {data,error}=await supabase.from('photo_conditions').select('photo_id,snapshot').in('photo_id',rows.slice(offset,offset+100).map(p=>p.id));if(error){conditionsAvailable=false;break;}for(const c of data??[])conditions.set(c.photo_id,c.snapshot as PhotoConditions);}
+  const organisation=await readPhotoTags(supabase,rows.map(p=>p.id));
   return Response.json(
-    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '',conditions.get(p.id)??null)), conditionsAvailable: !conditionsError },
+    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '',conditions.get(p.id)??null,organisation.tags.get(p.id)??emptyTags())), conditionsAvailable, tagsAvailable:organisation.available },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
@@ -50,6 +54,8 @@ export async function POST(request: Request) {
 
   if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before posting.'}, {status:400});
 
+  const requestedTags=body.tags===undefined?emptyTags():parseTags(body.tags);
+  if(!requestedTags)return Response.json({error:'Choose valid photo tags.'},{status:400});
   let conditions:PhotoConditions|null=null;
   if(body.capturedAt!==undefined){
     const capturedAt=body.capturedAt;
@@ -67,6 +73,8 @@ export async function POST(request: Request) {
     const setupMissing=conditions&&['PGRST202','42P01','42883'].includes(error?.code??'');
     return Response.json({error:setupMissing?'Photo conditions are not enabled yet. The new conditions table needs to be set up before saving.':'Your photo could not be saved. Please try again.'},{status:503});
   }
+  const hasTags=requestedTags.imageTypes.length||requestedTags.weather.length||requestedTags.area||requestedTags.timeOfDay;
+  const tagsSaved=!hasTags||await writePhotoTags(supabase,(row as PhotoRow).id,requestedTags);
   const { data: signed } = await supabase.storage.from(mediaBucket(key)).createSignedUrl(key, URL_TTL);
-  return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '',conditions) }, { status: 201 });
+  return Response.json({ photo: toPhoto(row as PhotoRow,user.id,signed?.signedUrl??'',conditions,tagsSaved?requestedTags:emptyTags()),...(!tagsSaved?{warning:'Photograph saved, but its tags could not be saved. You can add them later from the gallery.'}:{}) }, { status: 201 });
 }
