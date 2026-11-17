@@ -14,6 +14,10 @@
 - This includes existing databases, records, photographs, files, buckets, stored messages, migrations that alter existing storage, and local preview storage. Do not reset, clear, overwrite, or replace them as part of routine development or troubleshooting.
 - Approval to upload code to GitHub is not approval to delete or change existing storage.
 
+## Database and deployment admin
+
+- If you want to change something about the database, apply migrations, deploy, or add hosted services on the backend, please notify Philipp.
+
 ## Make changes locally first
 
 1. Make requested changes locally.
