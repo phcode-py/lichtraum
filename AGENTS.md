@@ -2,6 +2,7 @@
 
 ## Start here
 
+- Always pull `main` at the start of a session and after a long break before making changes; preserve any uncommitted local work.
 - This is a design-focused project by two architects. Design questions are more important than coding questions. Prioritize visual quality, spatial thinking, typography, atmosphere, and the experience of using the project.
 - Collaborators may have no knowledge of coding or GitHub. Use friendly, plain language and explain changes through what they can see and do.
 - Read `.local-memory/memory.md` when it exists for local project memory. It is ignored by Git and must stay local.

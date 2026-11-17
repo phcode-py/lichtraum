@@ -5,7 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import {Camera,Check,LocateFixed,Pause,Play,Square} from 'lucide-react';
 import {mapStyle} from './photo-map';
 import {createClient} from '@/lib/supabase/client';
-import {prepareImage,uploadImage} from '@/lib/image';
+import {MEDIA_ACCEPT,uploadMedia} from '@/lib/media';
 import {inZurich,nearestPlace} from '@/lib/places';
 import {defaultWalkTitle,formatDuration,metres,segments,type Walk,type WalkPoint} from '@/lib/walks';
 
@@ -186,12 +186,12 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
   const supabase=createClient();let key='';
   try{
    const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');
-   key=await uploadImage(supabase,user.id,await prepareImage(file));
+   key=await uploadMedia(supabase,user.id,file);
    const number=String(impressions.length+1).padStart(2,'0');
    const r=await fetch('/api/photos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,title:`Impression ${number}`,caption:'',place:nearestPlace(at.lat,at.lng),lat:at.lat,lng:at.lng,category:'Light',walk:walk.id,shared:walk.shared})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'The impression could not be saved.');
    onImpression(data.photo);setMessage('Impression pinned.');
-  }catch(e){if(key)supabase.storage.from('photos').remove([key]);setMessage(e instanceof Error?e.message:'The impression could not be saved.');}
+  }catch(e){setMessage(e instanceof Error?e.message:'The impression could not be saved.');}
   finally{setUploading(n=>n-1);}
  }
  function recenter(){setFollowing(true);const f=lastFix.current;if(f)map.current?.easeTo({center:[f.lng,f.lat],zoom:Math.max(map.current.getZoom(),16),duration:500});}
@@ -220,7 +220,7 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
      <button onClick={togglePause} disabled={status==='saving'}>{status==='recording'?<><Pause size={16}/>Pause</>:<><Play size={16}/>Resume</>}</button>
      <button className={endArmed?'armed':''} onClick={end} disabled={status==='saving'||uploading>0}>{status==='saving'?'Saving…':endArmed?'Tap again to end':<><Square size={14}/>End walk</>}</button>
     </div>
-    <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={e=>onPhoto(e.target.files?.[0])}/>
+    <input ref={fileInput} type="file" accept={MEDIA_ACCEPT} hidden onChange={e=>onPhoto(e.target.files?.[0])}/>
    </div>}
   {message&&<div className="walk-rec-message" role="status">{message}</div>}
  </div>;

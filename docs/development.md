@@ -71,3 +71,25 @@ The sun button opens an adjustable, browser-calculated solar study for central Z
 Pencil and trash icons appear only for the current user's items. Walk edits change the name and sharing. Walk removal requires an explicit confirmation and only removes the owner's finished walk record and route; photographs and stored files are retained in the light atlas. Active walks must be finished first. The endpoint checks ownership and status again when deleting.
 
 `supabase/migrations/20261111020000_walk_removal_policy.sql` prepares the owner-only delete policy for finished walks. It has not been applied by local development. Applying the policy does not itself delete records, but enables the confirmed removal action; review it separately from code upload. Existing photograph edit/remove endpoints remain owner-restricted. Photo removal confirmation states that the record and photo file are permanently removed.
+
+## Photo and video posts
+
+The plus button accepts a single photo (JPG/PNG/WebP, up to 10 MB) or video (MP4/WebM/MOV, up to 50 MB) per post, with title, caption and a Zürich map pin. Checking sharing posts it to the shared atlas; otherwise it stays private. Both formats are also accepted for walk impressions and when replacing a post's media. Images use the existing browser resizing helper. Videos upload directly, without transcoding; playback depends on browser codec support, with an open-file link if playback fails.
+
+Before using videos in production, separately review and apply `supabase/migrations/20261117000000_video_storage.sql`. It creates a **new private `videos` bucket** with owner upload/delete policies and owner/shared read access. It leaves the existing `photos` bucket, tables, records and stored files untouched. This migration is prepared only; code upload does not apply it.
+
+Existing extensionless photo keys remain unchanged. Video keys are `<owner>/<uuid>.mp4`, `.webm` or `.mov`, and use the existing post table and sharing rules. API routes check the file exists and its stored MIME type and size match before creating or replacing a post. Atlas cards, walk journals and details render the media type; videos play on request and map pins use a play symbol. Replacing media preserves the previous file. Failed saves also retain uploaded files; no automatic storage cleanup runs for these uploads. The existing explicit delete confirmation removes the current post/file from its corresponding bucket.
+
+Run media validation and storage-routing checks with `node --experimental-strip-types --test tests/media.test.mjs`.
+
+## Past walks and revisiting a walk
+
+The walk journal offers **Start a walk** and **Add a past walk**. Past entries use the existing `walks` table with `status: ended`, an explicitly chosen start/finish, distance and walking duration, and an empty GPS path. Creating a past entry never closes a current recording. No database migration is needed for this feature.
+
+The pencil opens the same editor for your own walks. Finished walks allow changes to their name, start/finish, distance, walking time and sharing. Open walks allow name/sharing changes until they are finished. Edits preserve the route and existing impressions. Dates appear in Europe/Zurich time; inputs account for Swiss daylight-saving transitions and preserve an existing timestamp in the repeated autumn hour. Finished walks stay in chronological order when their date changes.
+
+`POST /api/walks` with `kind: past` and a `details` object creates a finished entry. `PATCH /api/walks/[id]` accepts the same details for an owner's finished walk, with server validation of dates, elapsed time, totals and ownership. The `details` fields are `startedAt`/`endedAt` (ISO timestamps), `distance` (metres) and `duration` (walking seconds, excluding pauses). GPS recording continues to use its existing API payload.
+
+**Add a photo or video** on a walk opens the atlas composer with that walk selected and matching initial sharing. The composer also provides an optional walk selector. Saving a walk impression returns to that walk's journal. Sharing the walk and sharing each impression are independent, so private impressions remain private even on shared walks.
+
+Run safeguards with `node --experimental-strip-types --test tests/walk-details.test.mjs tests/walk-api.test.mjs`. The API tests run the real handlers against isolated in-memory data and never connect to Supabase.

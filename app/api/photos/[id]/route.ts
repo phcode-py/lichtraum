@@ -1,3 +1,4 @@
+import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
@@ -22,19 +23,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (category !== undefined && CATEGORIES.includes(category)) update.category = category;
   if (typeof body.shared === 'boolean') update.shared = body.shared;
   if (key !== undefined && key !== current.key) {
-    if (!new RegExp(`^${user.id}/[0-9a-f-]{36}$`).test(key)) return Response.json({ error: 'Invalid picture.' }, { status: 400 });
+    if (!validMediaKey(key, user.id)) return Response.json({ error: 'Invalid picture.' }, { status: 400 });
+    if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before saving.'}, {status:400});
     update.key = key;
   }
   if (!Object.keys(update).length) return Response.json({ error: 'Nothing to change.' }, { status: 400 });
 
   const { data: row, error } = await supabase.from('photos').update(update).eq('id', id).eq('owner', user.id).select('*').single();
   if (error || !row) {
-    if (update.key) await supabase.storage.from('photos').remove([update.key as string]);
     return Response.json({ error: 'Your changes could not be saved. Please try again.' }, { status: 503 });
   }
-  // The old picture is no longer used.
-  if (update.key) await supabase.storage.from('photos').remove([current.key]);
-  const { data: signed } = await supabase.storage.from('photos').createSignedUrl(row.key, URL_TTL);
+  // Keep the previous file: editing a post does not delete stored media.
+  const { data: signed } = await supabase.storage.from(mediaBucket(row.key)).createSignedUrl(row.key, URL_TTL);
   return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '') });
 }
 
@@ -47,7 +47,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   const { data: photo } = await supabase.from('photos').select('key').eq('id', id).eq('owner', user.id).maybeSingle();
   if (!photo) return new Response('Not found', { status: 404 });
-  const { error: storageError } = await supabase.storage.from('photos').remove([photo.key]);
+  const { error: storageError } = await supabase.storage.from(mediaBucket(photo.key)).remove([photo.key]);
   const { error } = storageError ? { error: storageError } : await supabase.from('photos').delete().eq('id', id).eq('owner', user.id);
   if (error) return Response.json({ error: 'Could not delete this photo. Try again.' }, { status: 503 });
   return Response.json({ ok: true });

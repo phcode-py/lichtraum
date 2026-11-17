@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'lichtraum zürich — atlas',
-  description: 'Walk together through Zürich. Photograph light and reflections, share a light atlas, and stay in touch through Correspondence.',
+  description: 'Walk together through Zürich. Photograph light and reflections, share a light atlas, and exchange ideas in Working notes.',
   icons: { icon: '/favicon.svg', apple: '/apple-touch-icon.png' },
   appleWebApp: { capable: true, title: 'lichtraum', statusBarStyle: 'default' },
 };
