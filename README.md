@@ -9,7 +9,7 @@ This is our place to collect those observations, put them on a map, and keep a c
 ## Take a look around
 
 - **Walks** — explore an example route through the city, with stops and a replay. The current walk is a simulation, not a live GPS recording.
-- **Light atlas** — browse photographs and their places, or add a reflection of your own.
+- **Light atlas** — browse photographs on the map, or choose **View as gallery** for a square image grid. Hover for notes and filter by walk, type of light, time, weather or area.
 - **Correspondence** — leave a thought, ask about a place, and share what caught your eye.
 
 ## Working on this together

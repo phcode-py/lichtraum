@@ -11,7 +11,7 @@ const sections=[
 export default function SiteNavigation({active,onOpen,onNavigate}:{active:string;onOpen:()=>void;onNavigate:(section:string)=>void}){
  const[open,setOpen]=useState(false),[preview,setPreview]=useState<string|null>(null);
  const container=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null);
- const current=active==='mine'?'explore':active;
+ const current=(active==='mine'||active==='gallery')?'explore':active;
  const highlighted=preview??current;
  useEffect(()=>{
   if(!open)return;
