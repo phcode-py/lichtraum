@@ -602,8 +602,8 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 .paper-rich-input:empty:before{content:attr(data-placeholder);color:#a2a699;pointer-events:none}
 .paper-rich-input[aria-disabled=true]{opacity:.6}
 .paper-compose .paper-compose-actions{display:flex;justify-content:flex-end;gap:20px}
-.paper-add-actions{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-top:20px}
-.correspondence-board .paper-write,.correspondence-board .paper-reference-add{display:flex;align-items:center;justify-content:flex-start;gap:8px;border:0;min-height:29px;width:auto;padding:0;margin:0;font-size:10px;line-height:1.4;color:#92988b;letter-spacing:0}
+.paper-add-actions{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin-top:20px}
+.correspondence-board .paper-write,.correspondence-board .paper-reference-add{display:flex;align-items:center;justify-content:flex-start;gap:8px;border:0;min-height:16px;width:auto;padding:0;margin:0;font-size:10px;line-height:1.4;color:#92988b;letter-spacing:0}
 .paper-write>svg{margin-left:0}
 .paper-reference-add:has(input:disabled){opacity:.5;cursor:default}
 .paper-write:hover,.paper-reference-add:hover{color:var(--blue)}
@@ -705,3 +705,9 @@ html.reactive-cursor .gallery-lightbox::backdrop{cursor:default!important}
 @media(max-width:720px){.gallery-lightbox-close{top:6px;right:6px;width:36px;height:36px}}
 
 .gallery-lightbox-figure>video{width:100%;height:100%;object-fit:contain}.gallery-card .atlas-video{width:100%;height:100%}
+
+/* Both timestamps share one left edge after a fixed-width label column. */
+.correspondence-board .board-paper .paper-dates,.correspondence-board .board-paper .paper-dates *{font-size:9px}
+.paper-dates{gap:3px;line-height:1.45}
+.paper-dates>span{display:grid;grid-template-columns:12ch minmax(0,1fr);column-gap:10px;align-items:baseline}
+.paper-dates time{margin-left:0;text-align:left}
