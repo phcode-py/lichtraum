@@ -46,7 +46,7 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
  const recordingSince=useRef<number|null>(null);
  useEffect(()=>{if(!startPaused)recordingSince.current=Date.now();},[startPaused]);
  const lastFix=useRef<Fix|null>(null);
- const pinAt=useRef<Fix|null>(null);
+ const pinAt=useRef<(Fix & {capturedAt:number})|null>(null);
  const saving=useRef(false);
  const wakeLock=useRef<WakeLockSentinel|null>(null);
  const fileInput=useRef<HTMLInputElement>(null);
@@ -177,7 +177,7 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
   const fix=lastFix.current;
   if(!fix){setMessage('Waiting for your position…');return;}
   if(!inZurich(fix.lat,fix.lng)){setMessage('Impressions can only be pinned in the Zürich area.');return;}
-  pinAt.current=fix;
+  pinAt.current={...fix,capturedAt:Date.now()};
   if(fileInput.current){fileInput.current.value='';fileInput.current.click();}
  }
  async function onPhoto(file?:File){
@@ -188,7 +188,7 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
    const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');
    key=await uploadMedia(supabase,user.id,file);
    const number=String(impressions.length+1).padStart(2,'0');
-   const r=await fetch('/api/photos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,title:`Impression ${number}`,caption:'',place:nearestPlace(at.lat,at.lng),lat:at.lat,lng:at.lng,category:'Light',walk:walk.id,shared:walk.shared})});
+   const r=await fetch('/api/photos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,capturedAt:at.capturedAt,timeSource:'camera',title:`Impression ${number}`,caption:'',place:nearestPlace(at.lat,at.lng),lat:at.lat,lng:at.lng,category:'Light',walk:walk.id,shared:walk.shared})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'The impression could not be saved.');
    onImpression(data.photo);setMessage('Impression pinned.');
   }catch(e){setMessage(e instanceof Error?e.message:'The impression could not be saved.');}

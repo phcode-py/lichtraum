@@ -21,8 +21,24 @@ export function zurichDate(time:number){return new Intl.DateTimeFormat('en-CA',{
 function localMidnight(utcDate:number){let candidate=utcDate;for(let i=0;i<3;i++){const parts=new Intl.DateTimeFormat('en-US',{timeZone:SUN_ZONE,timeZoneName:'longOffset'}).formatToParts(new Date(candidate));const zone=parts.find(p=>p.type==='timeZoneName')?.value||'GMT';const match=zone.match(/GMT([+-])(\d{2}):(\d{2})/);const offset=match?(Number(match[2])*60+Number(match[3]))*(match[1]==='+'?1:-1):0;candidate=utcDate-offset*60000}return candidate}
 export function sunDayBounds(date:string){const [year,month,day]=date.split('-').map(Number);return {start:localMidnight(Date.UTC(year,month-1,day)),end:localMidnight(Date.UTC(year,month-1,day+1))}}
 export type SunSample=SunPosition & {time:number};
-export function daySunPath(date:string){const {start,end}=sunDayBounds(date);const samples:SunSample[]=[];for(let time=start;time<=end;time+=300000)samples.push({time,...solarPosition(time)});return samples}
+export function daySunPath(date:string,lat=ZURICH.lat,lng=ZURICH.lng){const {start,end}=sunDayBounds(date);const samples:SunSample[]=[];for(let time=start;time<=end;time+=300000)samples.push({time,...solarPosition(time,lat,lng)});return samples}
 export function sunEvents(samples:SunSample[]){let sunrise:number|null=null,sunset:number|null=null;for(let i=1;i<samples.length;i++){const a=samples[i-1],b=samples[i];if((a.elevation<-.833)!==(b.elevation<-.833)){const time=a.time+(-.833-a.elevation)/(b.elevation-a.elevation)*(b.time-a.time);if(b.elevation>a.elevation)sunrise=time;else sunset=time}}return {sunrise,sunset}}
 export function sunDirection(azimuth:number){return ['N','NE','E','SE','S','SW','W','NW'][Math.round(azimuth/45)%8]}
 // A schematic bearing guide of fixed length, not the sun's distance or a shadow study.
-export function sunGuidePoint(azimuth:number,distance=900):[number,number]{const earth=6371000,angle=azimuth*rad,phi=ZURICH.lat*rad,lambda=ZURICH.lng*rad,d=distance/earth;const lat=Math.asin(Math.sin(phi)*Math.cos(d)+Math.cos(phi)*Math.sin(d)*Math.cos(angle));const lng=lambda+Math.atan2(Math.sin(angle)*Math.sin(d)*Math.cos(phi),Math.cos(d)-Math.sin(phi)*Math.sin(lat));return[lng*deg,lat*deg]}
+export function sunGuidePoint(azimuth:number,distance=900,origin=ZURICH):[number,number]{const earth=6371000,angle=azimuth*rad,phi=origin.lat*rad,lambda=origin.lng*rad,d=distance/earth;const lat=Math.asin(Math.sin(phi)*Math.cos(d)+Math.cos(phi)*Math.sin(d)*Math.cos(angle));const lng=lambda+Math.atan2(Math.sin(angle)*Math.sin(d)*Math.cos(phi),Math.cos(d)-Math.sin(phi)*Math.sin(lat));return[lng*deg,lat*deg]}
+
+// Date/time inputs always refer to Zürich, even on a device in another time zone.
+export function zurichDateTime(time:number){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:SUN_ZONE,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(time));
+ const value=(key:string)=>parts.find(p=>p.type===key)?.value;
+ return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value('minute')}`;
+}
+export function parseZurichDateTime(value:string):number|null{
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))return null;
+ const date=value.slice(0,10),minutes=Number(value.slice(11,13))*60+Number(value.slice(14,16));
+ const {start,end}=sunDayBounds(date);
+ // Searching actual instants rejects missing spring-forward times; the first occurrence
+ // of a repeated autumn hour is used consistently. The UI shows Europe/Zurich.
+ for(let time=start+Math.max(0,minutes-120)*60000;time<end;time+=60000){if(zurichDateTime(time)===value)return time;}
+ return null;
+}

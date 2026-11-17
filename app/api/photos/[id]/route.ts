@@ -1,5 +1,6 @@
 import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
+import type {PhotoConditions} from '@/lib/photo-conditions';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
 // Edit your own photograph: title, caption, category, sharing, or a new picture (already uploaded to storage).
@@ -35,7 +36,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
   // Keep the previous file: editing a post does not delete stored media.
   const { data: signed } = await supabase.storage.from(mediaBucket(row.key)).createSignedUrl(row.key, URL_TTL);
-  return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '') });
+  const {data:conditions}=await supabase.from('photo_conditions').select('snapshot').eq('photo_id',id).maybeSingle();
+  return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '',conditions?.snapshot as PhotoConditions??null) });
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {

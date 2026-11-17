@@ -3,6 +3,11 @@ import { type NextRequest, NextResponse } from "next/server";
 
 // Refreshes the Supabase session cookie and keeps the whole site behind sign-in.
 export async function proxy(request: NextRequest) {
+  // Only this isolated demonstration is public in local development. It uses no
+  // backend data or write actions. All other pages/APIs retain their sign-in rules.
+  if(process.env.NODE_ENV === 'development' && request.nextUrl.pathname === '/preview/light-study') {
+    return NextResponse.next();
+  }
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
