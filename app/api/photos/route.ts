@@ -1,3 +1,5 @@
+import {fetchWeather,type PhotoConditions} from '@/lib/photo-conditions';
+import {solarPosition} from '@/lib/sun';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
@@ -10,8 +12,10 @@ export async function GET() {
   if (error) return Response.json({ error: 'Your collection could not be loaded. Please try again.' }, { status: 503 });
   const signed = rows.length ? (await supabase.storage.from('photos').createSignedUrls(rows.map(r => r.key), URL_TTL)).data ?? [] : [];
   const urls = new Map(signed.map(s => [s.path, s.signedUrl]));
+  const {data: snapshots,error: conditionsError}=await supabase.from('photo_conditions').select('photo_id,snapshot');
+  const conditions=new Map((snapshots??[]).map(r=>[r.photo_id,r.snapshot as PhotoConditions]));
   return Response.json(
-    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '')) },
+    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '',conditions.get(p.id)??null)), conditionsAvailable: !conditionsError },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
@@ -38,13 +42,23 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Add a title, an image under 10 MB, and a location in Zürich.' }, { status: 400 });
   }
 
-  const { data: row, error } = await supabase.from('photos')
-    .insert({ owner: user.id, author_name: user.name, title, caption, place, category, walk, shared, lat, lng, key })
-    .select('*').single();
-  if (error || !row) {
-    await supabase.storage.from('photos').remove([key]);
-    return Response.json({ error: 'Your photo could not be saved. Please try again.' }, { status: 503 });
+  let conditions:PhotoConditions|null=null;
+  if(body.capturedAt!==undefined){
+    const capturedAt=body.capturedAt;
+    if(typeof capturedAt!=='number'||!Number.isFinite(capturedAt)||capturedAt<Date.UTC(1940,0,1)||capturedAt>Date.now()+60000)
+      return Response.json({error:'Choose when the photograph was taken, in Zürich time.'},{status:400});
+    const weather=await fetchWeather(capturedAt,lat,lng);
+    conditions={capturedAt,timeSource:body.timeSource==='camera'?'camera':'chosen',lat,lng,sun:solarPosition(capturedAt,lat,lng),weather,weatherStatus:weather?'available':'unavailable'};
+  }
+  const photo={owner:user.id,author_name:user.name,title,caption,place,category,walk,shared,lat,lng,key};
+  const {data:row,error}=conditions
+    ? await supabase.rpc('create_photo_with_conditions',{p_photo:photo,p_snapshot:conditions}).single()
+    : await supabase.from('photos').insert(photo).select('*').single();
+  if(error||!row){
+    // Retain the newly uploaded file; never delete backend content during error recovery.
+    const setupMissing=conditions&&['PGRST202','42P01','42883'].includes(error?.code??'');
+    return Response.json({error:setupMissing?'Photo conditions are not enabled yet. The new conditions table needs to be set up before saving.':'Your photo could not be saved. Please try again.'},{status:503});
   }
   const { data: signed } = await supabase.storage.from('photos').createSignedUrl(key, URL_TTL);
-  return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '') }, { status: 201 });
+  return Response.json({ photo: toPhoto(row as PhotoRow, user.id, signed?.signedUrl ?? '',conditions) }, { status: 201 });
 }

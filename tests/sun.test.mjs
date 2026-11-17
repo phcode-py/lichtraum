@@ -37,3 +37,13 @@ test('map bearing guides point north/east/south/west without a fake distance',()
  assert.ok(east[0]>ZURICH.lng&&west[0]<ZURICH.lng);
  assert.ok(Math.abs(north[0]-ZURICH.lng)<1e-8);
 });
+
+test('a moved origin changes the full day path and its map guide',()=>{
+ const point={lat:47.3895,lng:8.5187};
+ const guide=sunGuidePoint(0,900,point);
+ assert.ok(guide[1]>point.lat);
+ assert.ok(Math.abs(guide[0]-point.lng)<1e-8);
+ const samples=daySunPath('2026-11-17',point.lat,point.lng);
+ assert.deepEqual({azimuth:samples[50].azimuth,elevation:samples[50].elevation},solarPosition(samples[50].time,point.lat,point.lng));
+ assert.notDeepEqual(samples[50],daySunPath('2026-11-17')[50]);
+});
