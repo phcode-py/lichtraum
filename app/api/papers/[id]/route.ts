@@ -26,3 +26,22 @@ export async function PATCH(request:Request,{params}:{params:Promise<{id:string}
  if(!data)return Response.json({error:'Paper not found.'},{status:404});
  return Response.json({paper:toPaper(data as PaperRow,user.id)});
 }
+
+// Remove the sheet from the board without destroying notes or reference files.
+export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
+ if(isCrossOrigin(request))return new Response('Forbidden',{status:403});
+ const db=await createClient(),user=await getSessionUser(db);
+ if(!user)return Response.json({error:'Sign in to delete a paper.'},{status:401});
+ let body;try{body=await request.json()}catch{return Response.json({error:'Confirm the paper deletion first.'},{status:400})}
+ if(body?.confirmed!==true)return Response.json({error:'Confirm the paper deletion first.'},{status:400});
+ const {id}=await params;
+ if(id==='room'||id==='contributors')return Response.json({error:'Built-in sheets cannot be deleted.'},{status:403});
+ const {data:paper,error:readError}=await db.from('correspondence_papers').select('id,owner').eq('id',id).maybeSingle();
+ if(readError)return Response.json({error:'The paper could not be loaded. Please try again.'},{status:503});
+ if(!paper)return Response.json({error:'Paper not found.'},{status:404});
+ if(paper.owner!==user.id)return Response.json({error:'Only the person who created this paper can delete it.'},{status:403});
+ const {data,error}=await db.rpc('archive_correspondence_paper',{paper_id:id});
+ if(error)return Response.json({error:['PGRST202','42883','42703'].includes(error.code)?'Paper deletion needs the one-time database setup. Your paper is unchanged.':'The paper could not be deleted. Please try again.'},{status:503});
+ if(data!==true)return Response.json({error:'Paper not found or no longer yours.'},{status:404});
+ return Response.json({ok:true});
+}

@@ -74,3 +74,22 @@ test('paper sections persist through metadata edits and invalid categories do no
  assert.equal((await paperApi.PATCH(request({...details,category:'other'}),params)).status,400);
  assert.equal((await paperApi.PATCH(request({x:20,y:30,category:'messages'}),params)).status,400);assert.equal(f.rpcs.length,1);
 });
+
+test('paper removal requires confirmation, sign-in, ownership and a normal paper',async()=>{
+ const f=fixture(),calls=[];f.state.db.rpc=async(name,args)=>{calls.push({name,args});return {data:true,error:null}};
+ const send=(body,origin,routeParams=params)=>paperApi.DELETE(request(body,origin),routeParams);
+ assert.equal((await send({})).status,400);
+ assert.equal((await send({confirmed:true},'https://another.example')).status,403);
+ assert.equal((await send({confirmed:true},undefined,{params:Promise.resolve({id:'room'})})).status,403);
+ f.state.user.id='partner';assert.equal((await send({confirmed:true})).status,403);
+ f.state.user=null;assert.equal((await send({confirmed:true})).status,401);assert.equal(calls.length,0);
+ f.state.user={id:'owner',name:'Architect'};const before=structuredClone(f.rows);
+ assert.equal((await send({confirmed:true})).status,200);
+ assert.deepEqual(calls,[{name:'archive_correspondence_paper',args:{paper_id:'paper'}}]);
+ assert.deepEqual(f.rows,before); // Handler never deletes notes, files or other records directly.
+});
+test('removal setup errors leave the paper in place and explain the missing setup',async()=>{
+ const f=fixture();f.state.db.rpc=async()=>({data:null,error:{code:'PGRST202'}});
+ const response=await paperApi.DELETE(request({confirmed:true}),params);
+ assert.equal(response.status,503);assert.match((await response.json()).error,/database setup/);assert.equal(f.rows.correspondence_papers.length,1);
+});

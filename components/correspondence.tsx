@@ -1,13 +1,15 @@
 'use client';
 import {createContext,useContext,useCallback,useEffect,useRef,useState,type CSSProperties,type ReactNode,type PointerEvent as ReactPointerEvent,type KeyboardEvent as ReactKeyboardEvent} from 'react';
-import {ArrowUpRight,ImagePlus,Pencil,Plus,RefreshCw,X} from 'lucide-react';
+import {ArrowUpRight,Camera,Video,Pencil,Plus,RefreshCw,SlidersHorizontal,Trash2,X} from 'lucide-react';
 import {paperCategory,type Paper,type PaperCategory,type PaperMaterial,type SheetSettings} from '@/lib/papers';
-import {REFERENCE_ACCEPT,referenceError,uploadPaperReference} from '@/lib/paper-references';
+import {REFERENCE_IMAGE_ACCEPT,REFERENCE_VIDEO_ACCEPT,referenceError,uploadPaperReference} from '@/lib/paper-references';
+
+import PaperTextEditor,{PaperText} from './paper-text-editor';
+import {paperTextPlain} from '@/lib/paper-text';
 
 export const PaperReferenceUploadContext=createContext<(file:File)=>Promise<string>>(uploadPaperReference);
 
-type Message={id:string;author:string;content:string;createdAt:number;mine:boolean;hasImage?:boolean;imageUrl?:string};
-type Contributor={name:string;count:number;latest:number};
+type Message={id:string;author:string;content:string;createdAt:number;mine:boolean;hasImage?:boolean;imageUrl?:string;mediaType?:'image'|'video'};
 type Position={x:number;y:number};
 
 // Each sheet keeps its own irregular tape arrangement while it is moved or refreshed.
@@ -33,22 +35,26 @@ function PaperMaterialControl({value,onChange,disabled=false}:{value:PaperMateri
 
 function PaperEntry({message,index,endpoint,onSaved}:{message:Message;index:number;endpoint:string;onSaved:(m:Message)=>void}){
  const[editing,setEditing]=useState(false),[content,setContent]=useState(message.content),[busy,setBusy]=useState(false),[error,setError]=useState('');
- async function save(e:React.FormEvent){e.preventDefault();if(!content.trim()||busy)return;setBusy(true);setError('');try{const r=await fetch(endpoint,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entryId:message.id,content})});const data=await r.json();if(!r.ok)throw Error(data.error||'Your entry could not be updated.');onSaved(data.message);setEditing(false)}catch(e){setError(e instanceof Error?e.message:'Your entry could not be updated.')}finally{setBusy(false)}}
- return <article className="paper-entry"><div className="paper-entry-meta"><span>{String(index+1).padStart(3,'0')}</span>{message.mine&&!editing&&<button className="paper-entry-edit" aria-label={`Edit entry ${index+1}`} onClick={()=>{setContent(message.content);setError('');setEditing(true)}}><Pencil size={12}/></button>}</div>{message.hasImage&&(message.imageUrl?<a className="paper-reference" href={message.imageUrl} target="_blank" rel="noreferrer" aria-label={'Open reference image: '+message.content}><img src={message.imageUrl} alt={message.content} loading="lazy"/></a>:<p className="paper-reference-missing">Reference image unavailable. Refresh this paper to try again.</p>)}{editing?<form className="paper-compose paper-revise" onSubmit={save}><label><span className="sr-only">Edit your entry</span><textarea ref={node=>{if(node){node.style.height='auto';node.style.height=node.scrollHeight+'px'}}} aria-label="Edit entry text" autoFocus rows={4} maxLength={800} value={content} disabled={busy} onChange={e=>setContent(e.target.value)}/></label>{error&&<p role="alert" className="paper-error">{error}</p>}<div><span>{content.length}/800</span><button type="button" disabled={busy} onClick={()=>setEditing(false)}>cancel</button><button disabled={busy||!content.trim()}>{busy?'saving…':'save changes'}<ArrowUpRight size={13}/></button></div></form>:<p>{message.content}</p>}</article>;
+ async function save(e:React.FormEvent){e.preventDefault();if(!paperTextPlain(content).trim()||content.length>800||busy)return;setBusy(true);setError('');try{const r=await fetch(endpoint,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({entryId:message.id,content})});const data=await r.json();if(!r.ok)throw Error(data.error||'Your entry could not be updated.');onSaved(data.message);setEditing(false)}catch(e){setError(e instanceof Error?e.message:'Your entry could not be updated.')}finally{setBusy(false)}}
+ const caption=paperTextPlain(message.content);
+ return <article className="paper-entry"><div className="paper-entry-meta">{message.mine&&!editing&&<button className="paper-entry-edit" aria-label={`Edit entry ${index+1}`} onClick={()=>{setContent(message.content);setError('');setEditing(true)}}><Pencil size={12}/></button>}</div>
+  {message.hasImage&&(message.imageUrl?(message.mediaType==='video'?<video className="paper-reference-video" src={message.imageUrl} controls playsInline preload="metadata" aria-label={caption}/>:<a className="paper-reference" href={message.imageUrl} target="_blank" rel="noreferrer" aria-label={'Open reference image: '+caption}><img src={message.imageUrl} alt={caption} loading="lazy"/></a>):<p className="paper-reference-missing">Reference unavailable. Refresh this paper to try again.</p>)}
+  {editing?<form className="paper-compose paper-revise" onSubmit={save}><PaperTextEditor value={content} onChange={setContent} label="Edit entry text" autoFocus disabled={busy}/>{content.length>800&&<p className="paper-error">This entry is too long. Shorten it slightly to keep its formatting.</p>}{error&&<p role="alert" className="paper-error">{error}</p>}<div className="paper-compose-actions"><button type="button" disabled={busy} onClick={()=>setEditing(false)}>cancel</button><button disabled={busy||!paperTextPlain(content).trim()||content.length>800}>{busy?'saving…':'save changes'}</button></div></form>:<PaperText value={message.content}/>}
+ </article>;
 }
 
 function Entries({endpoint,onChanged,localPreview=false}:{endpoint:string;onChanged?:()=>void;localPreview?:boolean}){
  const[messages,setMessages]=useState<Message[]>([]),[text,setText]=useState(''),[loading,setLoading]=useState(!localPreview),[sending,setSending]=useState(false),[error,setError]=useState(''),[writing,setWriting]=useState(false);
  const[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState('');
  const uploadReference=useContext(PaperReferenceUploadContext),uploaded=useRef<{file:File;key:string}|null>(null);
+ const video=!!file?.type.startsWith('video/');
  useEffect(()=>{if(!file){setPreview('');return;}const url=URL.createObjectURL(file);setPreview(url);return()=>URL.revokeObjectURL(url)},[file]);
- function choose(file?:File){if(!file||sending)return;const problem=referenceError(file);if(problem){setError(problem);return;}setFile(file);uploaded.current=null;setWriting(true);setError('')}
- const feed=useRef<HTMLDivElement>(null),count=useRef(0),revision=useRef(0);
+ function choose(file?:File){if(!file||sending||localPreview)return;const problem=referenceError(file);if(problem){setError(problem);return;}setFile(file);uploaded.current=null;setWriting(true);setError('')}
+ const revision=useRef(0);
  const load=useCallback(async()=>{if(localPreview)return;const version=revision.current;try{const r=await fetch(endpoint);const data=await r.json();if(!r.ok)throw Error(data.error||'Entries could not be loaded.');if(version===revision.current){setMessages(data.messages);setError('')}}catch(e){setError(e instanceof Error?e.message:'Entries could not be loaded.')}finally{setLoading(false)}},[endpoint,localPreview]);
  useEffect(()=>{load();const timer=setInterval(()=>{if(!document.hidden)load()},15000);return()=>clearInterval(timer)},[load]);
- useEffect(()=>{if(messages.length!==count.current&&feed.current){feed.current.scrollTop=feed.current.scrollHeight;count.current=messages.length}},[messages]);
  async function send(e:React.FormEvent){
-  e.preventDefault();if(localPreview)return;if((!text.trim()&&!file)||sending)return;setSending(true);setError('');
+  e.preventDefault();if(localPreview||(!paperTextPlain(text).trim()&&!file)||text.length>800||sending)return;setSending(true);setError('');
   try{
    let imageKey:string|undefined;
    if(file){if(uploaded.current?.file!==file)uploaded.current={file,key:await uploadReference(file)};imageKey=uploaded.current!.key;}
@@ -56,14 +62,17 @@ function Entries({endpoint,onChanged,localPreview=false}:{endpoint:string;onChan
    const data=await r.json();if(!r.ok)throw Error(data.error||'Your entry could not be saved.');revision.current+=1;setMessages(list=>list.some(m=>m.id===data.message.id)?list:[...list,data.message]);setText('');setFile(null);uploaded.current=null;setWriting(false);onChanged?.();
   }catch(e){setError(e instanceof Error?e.message:'Your entry could not be saved.')}finally{setSending(false)}
  }
- return <div className="paper-notes" onDragOver={e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault()}} onDrop={e=>{e.preventDefault();choose(e.dataTransfer.files[0])}}><div className="paper-entry-count"><span></span><button aria-label="Refresh entries" onClick={load}><RefreshCw size={12}/></button></div>
-  <div className="paper-entries" ref={feed} role="log" aria-label="Paper entries" aria-live="polite" aria-busy={loading}>
-   {loading&&!messages.length?<p className="paper-empty">Opening this sheet…</p>:!messages.length&&<div className="paper-empty"><span className="paper-empty-label">a space for what stays with you</span><p>A thought.<br/>A place.<br/>Something<br/>worth keeping.</p></div>}
+ return <div className="paper-notes" onDragOver={e=>{if(e.dataTransfer.types.includes('Files'))e.preventDefault()}} onDrop={e=>{e.preventDefault();choose(e.dataTransfer.files[0])}}>
+  <div className="paper-entries" role="log" aria-label="Paper entries" aria-live="polite" aria-busy={loading}>
+   {loading&&!messages.length&&<p className="paper-loading">Opening this sheet…</p>}
    {messages.map((m,i)=><PaperEntry key={m.id} message={m} index={i} endpoint={endpoint} onSaved={updated=>{revision.current+=1;setMessages(list=>list.map(item=>item.id===updated.id?updated:item));onChanged?.()}}/>)}
   </div>
-  {writing?<form className="paper-compose" onSubmit={send}><label>{file?'note / image caption (optional)':'new entry'}<textarea aria-label="New entry" autoFocus rows={3} maxLength={800} value={text} onChange={e=>setText(e.target.value)} placeholder="Write on this paper…" disabled={sending}/></label><div className="paper-reference-draft">{preview&&<><img src={preview} alt="Selected reference image"/><button type="button" className="paper-reference-remove" aria-label="Remove selected image" disabled={sending} onClick={()=>{setFile(null);uploaded.current=null}}><X size={13}/></button><small>{file?.name}</small></>}</div><div><span>{text.length}/800</span><button type="button" disabled={sending} onClick={()=>{setWriting(false);setFile(null);uploaded.current=null}}>cancel</button><button disabled={sending||(!text.trim()&&!file)}>{sending?'saving…':file?'add reference':'leave entry'}<ArrowUpRight size={13}/></button></div></form>:<button className="paper-write" disabled={localPreview} onClick={()=>setWriting(true)}><span aria-hidden="true">&gt;</span> leave an entry<ArrowUpRight size={14}/></button>}
-  <label className="paper-reference-add"><ImagePlus size={13}/>{file?'change image':'add reference image'}<input type="file" accept={REFERENCE_ACCEPT} aria-label="Choose reference image" disabled={sending||localPreview} onChange={e=>{choose(e.target.files?.[0]);e.currentTarget.value=''}}/></label>
-  {writing&&<p className="paper-reference-hint">JPG, PNG or WebP · up to 10 MB</p>}
+  {writing&&<form className="paper-compose" onSubmit={send}><PaperTextEditor value={text} onChange={setText} label={file?'Reference caption':'New entry'} autoFocus disabled={sending}/><div className="paper-reference-draft">{preview&&<>{video?<video src={preview} controls playsInline preload="metadata" aria-label="Selected reference video"/>:<img src={preview} alt="Selected reference image"/>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={sending} onClick={()=>{setFile(null);uploaded.current=null}}><X size={13}/></button><small>{file?.name}</small></>}</div>{text.length>800&&<p className="paper-error">This entry is too long. Shorten it slightly to keep its formatting.</p>}<div className="paper-compose-actions"><button type="button" disabled={sending} onClick={()=>{setWriting(false);setText('');setFile(null);uploaded.current=null}}>cancel</button><button disabled={sending||(!paperTextPlain(text).trim()&&!file)||text.length>800}>{sending?'saving…':file?'add reference':'leave entry'}</button></div></form>}
+  <div className="paper-add-actions">{!writing&&<button className="paper-write" disabled={localPreview} onClick={()=>setWriting(true)}><Plus size={12}/>leave an entry</button>}
+   <label className="paper-reference-add"><Camera size={12}/>add reference image<input type="file" accept={REFERENCE_IMAGE_ACCEPT} aria-label="Choose reference image" disabled={sending||localPreview} onChange={e=>{choose(e.target.files?.[0]);e.currentTarget.value=''}}/></label>
+   <label className="paper-reference-add"><Video size={12}/>add a video<input type="file" accept={REFERENCE_VIDEO_ACCEPT} aria-label="Choose reference video" disabled={sending||localPreview} onChange={e=>{choose(e.target.files?.[0]);e.currentTarget.value=''}}/></label>
+  </div>
+  {writing&&file&&<p className="paper-reference-hint">{video?'MP4, MOV or WebM · up to 50 MB':'JPG, PNG or WebP · up to 10 MB'}</p>}
   {error&&<p className="paper-error" role="alert">{error} <button onClick={load}>retry</button></p>}
  </div>;
 }
@@ -82,25 +91,35 @@ function Receipt({createdAt,updatedAt,id,title,subtitle,position,onMove,onSave,o
 }
 
 export default function Correspondence({localPreview=false}:{localPreview?:boolean}={}){
- const[group,setGroup]=useState<PaperCategory>('messages'),[category,setCategory]=useState<PaperCategory>('messages');
+ const[confirmRemoval,setConfirmRemoval]=useState(false);
+
+ const[group,setGroup]=useState<PaperCategory|'all'>('all'),[filterOpen,setFilterOpen]=useState(false),[category,setCategory]=useState<PaperCategory>('messages');
 
  const[editing,setEditing]=useState<Paper|null>(null),[settings,setSettings]=useState<Record<string,SheetSettings>>({});
- const[papers,setPapers]=useState<Paper[]>([]),[people,setPeople]=useState<Contributor[]>([]),[loading,setLoading]=useState(!localPreview),[error,setError]=useState(''),[creating,setCreating]=useState(false),[title,setTitle]=useState(''),[shared,setShared]=useState(true),[material,setMaterial]=useState<PaperMaterial>('opaque'),[saving,setSaving]=useState(false),[positions,setPositions]=useState<Record<string,Position>>({room:{x:56,y:50},contributors:{x:478,y:144}}),[layers,setLayers]=useState<Record<string,number>>({}),[notice,setNotice]=useState('');
+ const[papers,setPapers]=useState<Paper[]>([]),[loading,setLoading]=useState(!localPreview),[error,setError]=useState(''),[creating,setCreating]=useState(false),[title,setTitle]=useState(''),[shared,setShared]=useState(true),[material,setMaterial]=useState<PaperMaterial>('opaque'),[saving,setSaving]=useState(false),[positions,setPositions]=useState<Record<string,Position>>({room:{x:56,y:50},contributors:{x:478,y:144}}),[layers,setLayers]=useState<Record<string,number>>({}),[notice,setNotice]=useState('');
+ const filterControl=useRef<HTMLDivElement>(null),filterButton=useRef<HTMLButtonElement>(null);
  const createDialog=useRef<HTMLDialogElement>(null),boardRevision=useRef(0);
  const layer=useRef(1),scroller=useRef<HTMLDivElement>(null),pending=useRef(new Set<string>()),positionRequests=useRef(new Map<string,Promise<void>>());
  const load=useCallback(async()=>{
   if(localPreview)return;
   const version=boardRevision.current;
-  const results=await Promise.allSettled([fetch('/api/papers').then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Papers could not be loaded.');return data.papers as Paper[]}),fetch('/api/community').then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Contributors could not be loaded.');return data.contributors as Contributor[]}),fetch('/api/papers/settings').then(async r=>{const data=await r.json();if(!r.ok)throw Error();return data.settings as SheetSettings[]})]);
+  const results=await Promise.allSettled([fetch('/api/papers').then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Papers could not be loaded.');return data.papers as Paper[]}),fetch('/api/papers/settings').then(async r=>{const data=await r.json();if(!r.ok)throw Error();return data.settings as SheetSettings[]})]);
   if(version!==boardRevision.current)return;
-  if(results[2].status==='fulfilled')setSettings(Object.fromEntries(results[2].value.map(s=>[s.id,s])));
+  if(results[1].status==='fulfilled')setSettings(Object.fromEntries(results[1].value.map(s=>[s.id,s])));
   if(results[0].status==='fulfilled'){const list=results[0].value;setPapers(list);setPositions(current=>{const next={...current};for(const p of list)if(!pending.current.has(p.id))next[p.id]={x:p.x,y:p.y};return next});setError('')}else setError(results[0].reason instanceof Error?results[0].reason.message:'Papers could not be loaded.');
-  if(results[1].status==='fulfilled')setPeople(results[1].value);else setNotice('Contributors could not be loaded. Use refresh to try again.');
+
   setLoading(false);
  },[localPreview]);
  useEffect(()=>{load();const timer=setInterval(()=>{if(!document.hidden)load()},20000);return()=>clearInterval(timer)},[load]);
  useEffect(()=>{if(localPreview)return;try{const saved=JSON.parse(localStorage.getItem('lichtraum-correspondence-fixed-papers-v1')||'{}');setPositions(current=>{const next={...current};for(const id of ['room','contributors'])if(saved[id]&&Number.isFinite(saved[id].x)&&Number.isFinite(saved[id].y))next[id]={x:Math.max(0,Math.min(10000,saved[id].x)),y:Math.max(0,Math.min(10000,saved[id].y))};return next})}catch{}},[]);
  useEffect(()=>{if(creating){createDialog.current?.showModal();createDialog.current?.querySelector<HTMLInputElement>('input')?.focus()}},[creating]);
+ useEffect(()=>{if(!filterOpen)return;function outside(e:globalThis.PointerEvent){if(!filterControl.current?.contains(e.target as Node))setFilterOpen(false)}document.addEventListener('pointerdown',outside);return()=>document.removeEventListener('pointerdown',outside)},[filterOpen]);
+ function filterPapers(value:PaperCategory|'all'){
+  if(editing){setNotice('Save or cancel the current paper first.');return;}
+  setGroup(value);setFilterOpen(false);filterButton.current?.focus();
+  const first=papers.find(p=>paperCategory(p)===value),position=value==='references'?(first?positions[first.id]:undefined):positions.room;
+  if(position)scroller.current?.scrollTo({left:Math.max(0,position.x-50),top:Math.max(0,position.y-40),behavior:'smooth'});
+ }
  function move(id:string,p:Position){pending.current.add(id);setPositions(current=>({...current,[id]:p}))}
  function savePosition(id:string,p:Position){
   if(localPreview){pending.current.delete(id);return;}
@@ -109,8 +128,8 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
   const next=previous.then(async()=>{try{const r=await fetch('/api/papers/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});if(!r.ok)throw Error();setNotice('')}catch{setNotice('A paper’s position could not be saved. Move it again to retry.')}}).finally(()=>{if(positionRequests.current.get(id)===next){pending.current.delete(id);positionRequests.current.delete(id)}});positionRequests.current.set(id,next);
  }
  function focus(id:string){layer.current+=1;setLayers(current=>({...current,[id]:layer.current}))}
- function editPaper(p:Paper){if(editing){if(editing.id!==p.id)setNotice('Save or cancel the current paper first.');return;}setEditing(p);setCategory(paperCategory(p));setTitle(p.title);setShared(p.shared);setMaterial(p.material??'opaque');setError('');setNotice('');focus(p.id)}
- function cancelEdit(){if(saving)return;setEditing(null);setError('');setNotice('')}
+ function editPaper(p:Paper){if(editing){if(editing.id!==p.id)setNotice('Save or cancel the current paper first.');return;}setConfirmRemoval(false);setEditing(p);setCategory(paperCategory(p));setTitle(p.title);setShared(p.shared);setMaterial(p.material??'opaque');setError('');setNotice('');focus(p.id)}
+ function cancelEdit(){if(saving)return;setConfirmRemoval(false);setEditing(null);setError('');setNotice('')}
  const builtin=editing?.id==='room'||editing?.id==='contributors';
  async function create(e:React.FormEvent){
   e.preventDefault();if(localPreview)return;if(!title.trim()||saving)return;setSaving(true);setError('');
@@ -126,8 +145,19 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
     setPapers(list=>editing?list.map(p=>p.id===paper.id?paper:p):[...list,paper]);
     if(!editing){setPositions(current=>({...current,[paper.id]:position}));focus(paper.id);scroller.current?.scrollTo({left:Math.max(0,position.x-40),top:Math.max(0,position.y-40),behavior:'smooth'})}
    }
-   setCreating(false);setEditing(null);setTitle('');if(!builtin)setGroup(category);
+   setCreating(false);setEditing(null);setTitle('');if(!builtin&&group!=='all')setGroup(category);
   }catch(e){setError(e instanceof Error?e.message:'Your paper could not be saved.')}finally{setSaving(false)}
+ }
+ async function removePaper(){
+  if(!editing||!editing.mine||builtin||localPreview||saving||!confirmRemoval)return;
+  const id=editing.id;setSaving(true);setError('');
+  try{
+   // Finish any pending sticker move before taking this sheet off the board.
+   await positionRequests.current.get(id);
+   const r=await fetch('/api/papers/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirmed:true})});
+   const data=await r.json().catch(()=>null);if(!r.ok)throw Error(data?.error||(r.status===405?'Paper deletion is unavailable in this version. Reload the page and try again.':'The paper could not be deleted. Please try again.'));
+   boardRevision.current+=1;setPapers(list=>list.filter(p=>p.id!==id));setEditing(null);setConfirmRemoval(false);setNotice('Paper removed from the board.');
+  }catch(e){setError(e instanceof Error?e.message:'The paper could not be deleted.')}finally{setSaving(false)}
  }
  const canvasWidth=Math.max(1230,...Object.values(positions).map(p=>p.x+420)),canvasHeight=Math.max(950,...Object.values(positions).map(p=>p.y+900));
  const receipt=(id:string,name:string,subtitle:string,children:ReactNode,sheetMaterial:PaperMaterial='opaque')=>{
@@ -137,20 +167,24 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
    createdAt={papers.find(p=>p.id===id)?.createdAt} updatedAt={papers.find(p=>p.id===id)?.updatedAt} material={active?material:sheetMaterial} key={id} id={id} title={name}
    subtitle={subtitle.split('/')[0].trim().padStart(3,'0')}
    titleEditor={active?<textarea className="paper-title-editor" aria-label="Paper title" autoFocus rows={1} maxLength={80} value={title} disabled={saving} ref={node=>{if(node){node.style.height='auto';node.style.height=node.scrollHeight+'px'}}} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();cancelEdit()}}}/>:undefined}
-   editor={active?<form className="paper-inline-controls" onSubmit={create} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();cancelEdit()}}}>
+   editor={active?<form className="paper-inline-controls" onSubmit={confirmRemoval?e=>e.preventDefault():create} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();cancelEdit()}}}>
     <div className="paper-inline-options">{!builtin&&<label className="paper-category">section<select aria-label="Paper section" value={category} onChange={e=>setCategory(e.target.value as PaperCategory)} disabled={saving}><option value="messages">Messages</option><option value="references">References</option></select></label>}<PaperMaterialControl value={material} onChange={setMaterial} disabled={saving}/>{!builtin&&<label className="paper-inline-sharing"><input type="checkbox" checked={shared} disabled={saving||!editing.mine} onChange={e=>setShared(e.target.checked)}/>shared</label>}</div>
     {error&&<p className="paper-error" role="alert">{error}</p>}
-    <div className="paper-inline-actions"><button type="button" disabled={saving} onClick={cancelEdit}>cancel</button><button disabled={saving||!title.trim()}>{saving?'saving…':'save changes'}</button></div>
+    {confirmRemoval?<div className="paper-delete-confirm" role="group" aria-label="Confirm paper deletion"><p>Remove “{editing.title}” from the board for everyone? Its notes and reference images will be kept in storage.</p><div><button type="button" disabled={saving} onClick={()=>{setConfirmRemoval(false);setError('')}}>keep paper</button><button type="button" className="paper-delete-confirm-button" disabled={saving} onClick={removePaper}>{saving?'removing…':'delete paper'}</button></div></div>:<div className="paper-inline-actions">{!builtin&&editing.mine&&<button className="paper-delete" type="button" aria-label={'Delete '+editing.title} title="Delete paper" disabled={saving||localPreview} onClick={()=>{setError('');setConfirmRemoval(true)}}><Trash2 size={14}/></button>}<button type="button" disabled={saving} onClick={cancelEdit}>cancel</button><button disabled={saving||!title.trim()}>{saving?'saving…':'save changes'}</button></div>}
    </form>:undefined}
    position={positions[id]||{x:820,y:64}} onMove={p=>move(id,p)} onSave={p=>savePosition(id,p)} onFocus={()=>focus(id)} layer={layers[id]||1}>{children}</Receipt>;
  };
  return <section className="correspondence-board" aria-label="Working notes board">
-  <h1 className="board-side-label">03 working notes</h1><header className="board-toolbar"><nav className="paper-groups" aria-label="Paper sections">{(['references','messages'] as const).map(value=><button key={value} aria-pressed={group===value} onClick={()=>{if(editing){setNotice('Save or cancel the current paper first.');return;}setGroup(value);const first=papers.find(p=>paperCategory(p)===value);const position=value==='messages'?positions.room:first?positions[first.id]:undefined;if(position)scroller.current?.scrollTo({left:Math.max(0,position.x-50),top:Math.max(0,position.y-40),behavior:'smooth'})}}>{value}</button>)}</nav><div className="board-actions"><button className="board-new" disabled={localPreview} onClick={()=>{if(editing){setNotice('Save or cancel the current paper first.');return;}setEditing(null);setCategory(group);setTitle('');setCreating(true);setShared(true);setMaterial('opaque');setError('')}}><Plus size={21}/>new paper</button><button className="board-refresh" aria-label="Refresh board" onClick={load}><RefreshCw size={14}/></button></div></header>
+  <h1 className="board-side-label">03 working notes</h1><header className="board-toolbar"><div className="board-actions"><button className="board-new" disabled={localPreview} onClick={()=>{if(editing){setNotice('Save or cancel the current paper first.');return;}setEditing(null);setCategory(group==='all'?'messages':group);setTitle('');setCreating(true);setShared(true);setMaterial('opaque');setError('')}}><Plus size={21}/>new paper</button><div className="paper-filter" ref={filterControl} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setFilterOpen(false);filterButton.current?.focus()}}}>
+   <button ref={filterButton} className={'paper-filter-trigger'+(group!=='all'?' is-filtered':'')} aria-label={'Filter papers'+(group!=='all'?': '+group:'')} title="Filter papers" aria-expanded={filterOpen} aria-controls="paper-filter-options" onClick={()=>setFilterOpen(value=>!value)}><SlidersHorizontal size={15}/>{group!=='all'&&<span className="paper-filter-dot" aria-hidden="true"/>}</button>
+   {filterOpen&&<fieldset id="paper-filter-options" className="paper-filter-options"><legend>show papers</legend>{(['all','references','messages'] as const).map(value=><label key={value}><input type="radio" name="paper-filter" value={value} checked={group===value} onChange={()=>filterPapers(value)}/><span>{value==='all'?'all papers':value}</span></label>)}</fieldset>}
+  </div><button className="board-refresh" aria-label="Refresh board" onClick={load}><RefreshCw size={14}/></button></div></header>
+
   {(error||notice)&&<div className="board-notice" role="status">{error||notice}<button onClick={load}>refresh</button></div>}
   <div className="board-scroll" ref={scroller}><div className="board-canvas" style={{width:canvasWidth,height:canvasHeight}}>
-   {group==='messages'&&receipt('room',settings.room?.title??'the room','01 / an ongoing conversation',<Entries endpoint="/api/community" localPreview={localPreview}/>,settings.room?.material)}
-   {group==='messages'&&receipt('contributors',settings.contributors?.title??'contributors','02 / the people behind the walks',<><div className="paper-contributors">{people.length?people.map((p,i)=><div className="paper-person" key={i}><span>{String(i+1).padStart(2,'0')}</span><div><strong>{p.name}</strong><p>{p.count} {p.count===1?'photograph':'photographs'}</p></div></div>):<p className="paper-empty">{loading?'Opening the atlas…':'The people who walk, notice and collect will appear here.'}</p>}</div><div className="paper-totals"><span>{people.length} contributors</span><span>{people.reduce((n,p)=>n+p.count,0)} photographs</span></div></>,settings.contributors?.material)}
-   {papers.map((p,i)=>({p,i})).filter(({p})=>paperCategory(p)===group).map(({p,i})=>receipt(p.id,p.title,`${String(i+3).padStart(2,'0')} / ${p.shared?'shared':'only you'} / ${p.author}`,<Entries endpoint={'/api/papers/'+p.id+'/entries'} onChanged={load} localPreview={localPreview}/>,p.material))}
+   {group!=='references'&&receipt('room',settings.room?.title??'the room','01 / an ongoing conversation',<Entries endpoint="/api/community" localPreview={localPreview}/>,settings.room?.material)}
+
+   {papers.map((p,i)=>({p,i})).filter(({p})=>group==='all'||paperCategory(p)===group).map(({p,i})=>receipt(p.id,p.title,`${String(i+3).padStart(2,'0')} / ${p.shared?'shared':'only you'} / ${p.author}`,<Entries endpoint={'/api/papers/'+p.id+'/entries'} onChanged={load} localPreview={localPreview}/>,p.material))}
   </div></div>
   {creating&&<dialog ref={createDialog} className="paper-create-backdrop" aria-label="Start a working-notes paper" onKeyDown={e=>{if(e.key==='Escape')e.stopPropagation()}} onCancel={e=>{e.preventDefault();if(!saving)setCreating(false)}}><form className="paper-create" onSubmit={create}><button className="paper-create-close" type="button" aria-label="Close paper editor" disabled={saving} onClick={()=>setCreating(false)}><X size={18}/></button><p>AN OPEN CONVERSATION / A NEW SHEET</p><h2>A place for a thought.</h2><label>paper title<input autoFocus required maxLength={80} value={title} onChange={e=>setTitle(e.target.value)} placeholder="Thoughts after a walk…" disabled={saving}/></label><label className="paper-category">section<select aria-label="Paper section" value={category} onChange={e=>setCategory(e.target.value as PaperCategory)}><option value="messages">Messages</option><option value="references">References</option></select></label><PaperMaterialControl value={material} onChange={setMaterial} disabled={saving}/>{builtin?<p className="paper-sharing-note">{editing?.id==='contributors'?'The contributor list updates automatically.':'The room stays shared. You can edit your own entries on the sheet.'}</p>:<><label className="paper-sharing"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)} disabled={saving||!!editing&&!editing.mine}/>shared with everyone</label><p className="paper-sharing-note">{editing&&!editing.mine?'Sharing is managed by the person who started this paper.':shared?'Everyone can read this paper and leave entries.':'Only you can see this paper and its entries.'}</p></>}{error&&<p className="paper-error" role="alert">{error}</p>}<button className="paper-create-submit" disabled={saving||!title.trim()}>{saving?'saving…':editing?'save changes':'start paper'}<ArrowUpRight size={17}/></button></form></dialog>}
  </section>;

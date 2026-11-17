@@ -515,10 +515,7 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 @media(max-width:720px){.paper-reference-add{font-size:12px;min-height:40px}}
 
 /* Working notes: a quiet two-part index and a consistent sheet heading. */
-.correspondence-board .board-toolbar{justify-content:space-between;padding-left:124px}
-.paper-groups{display:flex;gap:24px;align-items:center}
-.paper-groups button{color:#92968d;font-size:17px;line-height:1.3;padding:8px 0;transition:color .25s}
-.paper-groups button[aria-pressed=true],.paper-groups button:hover{color:var(--blue)}
+.correspondence-board .board-toolbar{justify-content:flex-end;padding-left:124px}
 .paper-heading>p{margin-bottom:10px;font-size:10px;letter-spacing:.5px}
 .paper-dates{display:flex;flex-direction:column;gap:4px;margin-top:17px;color:#858a80;font-size:10px;line-height:1.4;letter-spacing:0}
 .paper-dates time{margin-left:8px}
@@ -526,7 +523,7 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 .paper-category{display:flex;align-items:center;gap:8px;font-size:11px;color:#858a80}
 .paper-category select{font:inherit;color:var(--blue);border:0;border-bottom:1px solid #bfc4ba;background:transparent;padding:4px 0}
 .paper-create>.paper-category{margin:15px 0}
-@media(max-width:720px){.correspondence-board .board-toolbar{padding-left:94px}.paper-groups{gap:14px}.paper-groups button{font-size:13px}.board-actions{gap:12px}}
+@media(max-width:720px){.correspondence-board .board-toolbar{padding-left:94px}.board-actions{gap:12px}}
 
 .current-location-dot{display:block;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:var(--blue);box-shadow:0 0 0 5px #2446e81a,0 1px 5px #0003;pointer-events:none}
 .map-location-status{position:absolute;z-index:5;bottom:42px;left:24px;max-width:280px;padding:9px 12px;background:#fafaf7e8;color:#62665d;font-size:11px;line-height:1.5}
@@ -562,3 +559,66 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 /* A small status label; all preview layout comes from the real application. */
 .local-preview-status{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:1200;max-width:calc(100vw - 32px);width:max-content;background:#fafaf7ed;color:#647057;border:1px solid #dfe3d7;padding:8px 12px;font-size:10px;line-height:1.6;text-align:center;pointer-events:none}
 @media(max-width:720px){.local-preview-status{font-size:9px;bottom:8px;padding:6px 10px}}
+
+.paper-inline-actions .paper-delete{margin-right:auto;display:grid;place-items:center;min-width:32px;min-height:32px;padding:6px;color:#9a5e51}
+.paper-inline-actions .paper-delete:hover{color:#b43e2b}
+.paper-delete-confirm{margin-top:16px;border-top:1px solid #d8dad1;padding-top:14px}
+.paper-delete-confirm p{font-size:12px;line-height:1.6;margin:0 0 12px;color:#706b61}
+.paper-delete-confirm>div{display:flex;justify-content:flex-end;gap:20px}
+.paper-delete-confirm button{font-size:11px;padding:8px 0;color:var(--blue)}
+.paper-delete-confirm .paper-delete-confirm-button{color:#a54735}
+
+/* The wall opens with all sheets; category choices live in a small toolbar control. */
+.paper-filter{position:relative;z-index:8}
+.paper-filter-trigger{position:relative;display:grid;place-items:center;width:26px;height:30px;padding:0;color:var(--blue);background:transparent;border:0;transition:opacity .2s}
+.paper-filter-trigger:hover,.paper-filter-trigger[aria-expanded=true]{opacity:.65}
+.paper-filter-dot{position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:var(--blue)}
+.paper-filter-options{position:absolute;right:0;top:calc(100% + 12px);width:160px;margin:0;padding:16px 18px;border:1px solid #d7dbd1;background:#fffffcf5;box-shadow:0 6px 24px #2028200d}
+.paper-filter-options legend{float:left;width:100%;margin-bottom:12px;color:#92968d;font-size:10px;letter-spacing:.3px}
+.paper-filter-options label{clear:both;display:flex;align-items:center;gap:9px;min-height:34px;font-size:13px;color:#74796e;cursor:pointer}
+.paper-filter-options input{accent-color:var(--blue);width:12px;height:12px;margin:0}
+.paper-filter-options input:checked+span{color:var(--blue)}
+@media(max-width:720px){.paper-filter-trigger{width:30px;height:36px}}
+
+/* Quiet sheets: text follows dates directly; typewriter is confined to paper annotations. */
+.correspondence-board .paper-heading{border:0;padding-bottom:18px}
+.correspondence-board .paper-heading h2,.correspondence-board .paper-title-editor{font-size:23px;line-height:1.18;letter-spacing:-.5px}
+.correspondence-board .paper-entry{border:0;padding:0 0 18px}
+.correspondence-board .paper-entry-meta{height:0;min-height:0}
+.correspondence-board .paper-entries{max-height:none;overflow:visible}
+.correspondence-board .paper-text,.correspondence-board .paper-rich-input{font-size:14px;line-height:1.65;letter-spacing:0;font-weight:400;color:#373b31;white-space:pre-wrap;overflow-wrap:anywhere}
+.paper-text{padding-right:15px}.paper-text p,.paper-text div,.paper-rich-input p,.paper-rich-input div{margin:0 0 .65em}
+.paper-text ul,.paper-text ol,.paper-rich-input ul,.paper-rich-input ol{padding-left:20px;margin:8px 0}
+.paper-text strong,.paper-text b,.paper-rich-input strong,.paper-rich-input b{font-weight:700}
+.paper-text em,.paper-text i,.paper-rich-input em,.paper-rich-input i{font-style:italic}
+.paper-text blockquote,.paper-rich-input blockquote{margin:8px 0;padding-left:12px;border-left:2px solid #afb5a5}
+.correspondence-board .paper-compose{border:0;padding-top:0}
+.paper-compose>.paper-rich-editor{display:block;min-width:0}
+.paper-format-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.paper-compose .paper-format-tools button{display:grid;place-items:center;width:25px;height:25px;padding:0;color:#8a9084}
+.paper-format-tools button[aria-pressed=true]{color:var(--blue);background:#2446e80b}
+.paper-rich-input{min-height:90px;outline:none;padding:0 0 8px;cursor:text}
+.paper-rich-input:empty:before{content:attr(data-placeholder);color:#a2a699;pointer-events:none}
+.paper-rich-input[aria-disabled=true]{opacity:.6}
+.paper-compose .paper-compose-actions{display:flex;justify-content:flex-end;gap:20px}
+.paper-add-actions{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-top:20px}
+.correspondence-board .paper-write,.correspondence-board .paper-reference-add{display:flex;align-items:center;justify-content:flex-start;gap:8px;border:0;min-height:29px;width:auto;padding:0;margin:0;font-size:10px;line-height:1.4;color:#92988b;letter-spacing:0}
+.paper-write>svg{margin-left:0}
+.paper-reference-add:has(input:disabled){opacity:.5;cursor:default}
+.paper-write:hover,.paper-reference-add:hover{color:var(--blue)}
+.paper-reference-video,.paper-reference-draft video{display:block;width:100%;max-height:300px;margin:10px 0;object-fit:contain}
+.correspondence-board .board-paper .paper-heading>p,
+.correspondence-board .board-paper .paper-dates,.correspondence-board .board-paper .paper-dates *,
+.correspondence-board .board-paper .paper-entry-meta *,
+.correspondence-board .board-paper .paper-add-actions *,
+.correspondence-board .board-paper .paper-reference-hint,
+.correspondence-board .board-paper .paper-reference-draft small,
+.correspondence-board .board-paper .paper-loading,
+.correspondence-board .board-paper .paper-inline-options *,
+.correspondence-board .board-paper .paper-inline-actions *,
+.correspondence-board .board-paper .paper-compose-actions *{font-family:'Courier New',Courier,monospace!important;font-size:10px;letter-spacing:0}
+.correspondence-board .paper-reference-add svg,.correspondence-board .paper-write svg{flex-shrink:0}
+.paper-loading{color:#92988b;margin:0 0 16px}
+
+.correspondence-board .paper-rich-input:empty:before{font-family:'Courier New',Courier,monospace;font-size:10px}
+.correspondence-board .board-paper .paper-reference-missing,.correspondence-board .board-paper .paper-delete-confirm p{font-family:'Courier New',Courier,monospace!important}

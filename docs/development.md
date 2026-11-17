@@ -120,3 +120,19 @@ Local verification on 17 November 2026: 11 geometry/weather/time-zone tests pass
 The sun diagram now has a viewport-aware screen radius (up to 170 CSS pixels, reduced to fit the uncovered map area). It is reprojected on every map movement and resize, so zooming in reduces its ground diameter instead of moving the arc outside the viewport. True-north bearings follow map rotation. The 28-pixel inset reserves room for the sun symbol. This affects only the schematic guide, not solar calculations or saved photo conditions.
 
 The sun & light sheet uses a 90% opaque background with a gentle 3px backdrop blur, keeping the underlying map discernible while text and controls remain fully opaque.
+
+
+## Removing a Working notes paper
+
+The paper's inline pencil editor shows a small trash icon to its creator. A second, explicit confirmation removes the sheet from everyone's board. It archives the sheet rather than destroying its entries or stored reference images. Built-in sheets and papers owned by someone else cannot be removed. The DELETE handler checks sign-in, same-origin, confirmation and ownership, and the database function checks ownership again atomically. A failed request leaves the editor and paper intact.
+
+`20261117050000_paper_removal.sql` is prepared only and requires the earlier paper-editing/category migrations. It adds a nullable removal timestamp and an owner-only archive function. The restrictive read policy also hides archived sheets' entries through existing access policies; metadata RPCs respect removal. No storage object or note is deleted, and applying the migration itself removes no papers. Code upload does not apply this migration.
+
+
+## Paper typography, formatting and video references
+
+Working notes sheets now use 23px Arial titles and 14px body text, with no separator rules after their dates or between entries. Small grey annotations and the three add controls use Courier New only inside sheets. The automatic contributors/statistics sheet is hidden, with its data/settings retained. Add controls are plus / leave an entry, camera / add reference image, and video camera / add a video.
+
+Inline note editors use native browser editing with visible bold, italic, underline, lists and undo/redo. Command/Ctrl+B, I and U format the selection or subsequent typing. Formatting is stored in the existing content field with a version marker; legacy plain text remains literal. A strict formatting-tag allowlist strips pasted attributes, links, images and executable HTML before rendering. Existing 800-character storage limits still apply, including formatting markup; overlong drafts remain visible and cannot be submitted until shortened.
+
+Paper videos use the same private paper-references bucket and signed-read rules. MP4, MOV and WebM up to50 MB are validated; image references remain limited to10 MB. Video keys retain their extension for playback; no files are overwritten or cleaned up automatically. Browser codec support determines playback. `20261117060000_paper_video_references.sql` prepares the bucket size/type extension only, and has NOT been applied. Review/apply storage setup separately from code upload.
