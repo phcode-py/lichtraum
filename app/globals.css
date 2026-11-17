@@ -602,8 +602,8 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 .paper-rich-input:empty:before{content:attr(data-placeholder);color:#a2a699;pointer-events:none}
 .paper-rich-input[aria-disabled=true]{opacity:.6}
 .paper-compose .paper-compose-actions{display:flex;justify-content:flex-end;gap:20px}
-.paper-add-actions{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin-top:20px}
-.correspondence-board .paper-write,.correspondence-board .paper-reference-add{display:flex;align-items:center;justify-content:flex-start;gap:8px;border:0;min-height:16px;width:auto;padding:0;margin:0;font-size:10px;line-height:1.4;color:#92988b;letter-spacing:0}
+.paper-add-actions{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:20px}
+.correspondence-board .paper-write,.correspondence-board .paper-reference-add{display:flex;align-items:center;justify-content:center;gap:0;border:0;min-height:24px;width:24px;padding:0;margin:0;font-size:10px;line-height:1.4;color:#92988b;letter-spacing:0}
 .paper-write>svg{margin-left:0}
 .paper-reference-add:has(input:disabled){opacity:.5;cursor:default}
 .paper-write:hover,.paper-reference-add:hover{color:var(--blue)}
@@ -711,3 +711,9 @@ html.reactive-cursor .gallery-lightbox::backdrop{cursor:default!important}
 .paper-dates{gap:0;line-height:16px}
 .paper-dates>span{display:grid;grid-template-columns:12ch minmax(0,1fr);column-gap:10px;align-items:baseline}
 .paper-dates time{margin-left:0;text-align:left}
+
+.paper-reference-add:focus-within{outline:1px solid var(--blue);outline-offset:2px}
+
+.correspondence-board .board-paper{display:flex;flex-direction:column}
+.paper-notes{display:flex;flex-direction:column;flex:1}
+.paper-add-actions{margin-top:auto;padding-top:20px}
