@@ -45,13 +45,10 @@ export default function WalkJournal({walks,impressions,selected,loading,onSelect
  }
 
  return <div className="walk-journal">
-  <div className="eyebrow"><span className="live-dot"/> REFLECTIVE WALKS</div>
-  <h1>Reflective walks<span className="chat-dot">.</span></h1>
-  <p className="walk-summary">Record a walk as you go, or return to one you have already taken.</p>
-  <div className="walk-entry-options"><button className="primary walk-start-inline" onClick={onStart}><Footprints size={15}/>Start a walk</button><button className="walk-past-button" onClick={()=>setAddingPast(true)}><Plus size={16}/>Add a past walk</button></div>
+  <h1>Reflective walks</h1>
+  <div className="walk-entry-options"><button className="primary walk-start-inline" onClick={onStart}><Footprints size={15}/>Start walk</button><button className="walk-past-button" onClick={()=>setAddingPast(true)}><Plus size={16}/>Add a past walk</button></div>
   {addingPast&&<WalkEditor onClose={()=>setAddingPast(false)} onSaved={onCreated}/>}
   <section className="walk-list">
-   <div className="section-label"><span>ALL WALKS</span><span>{walks.length}</span></div>
    {loading&&!walks.length&&<p className="walk-empty-note">Loading walks…</p>}
    {!loading&&!walks.length&&<p className="walk-empty-note">Your journal is open. Start a walk or add one from memory.</p>}
    {walks.map((w,i)=>{const count=impressions.filter(p=>p.walk===w.id).length;return <div key={w.id} className="walk-row-with-actions"><button className="walk-row" onClick={()=>onSelect(w.id)}>

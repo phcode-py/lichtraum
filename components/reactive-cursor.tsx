@@ -1,6 +1,37 @@
 'use client';
-import {useEffect,useRef} from 'react';
-export default function ReactiveCursor(){const cursor=useRef<HTMLDivElement>(null),label=useRef<HTMLSpanElement>(null);
- useEffect(()=>{const media=matchMedia('(hover: hover) and (pointer: fine)');if(!media.matches||!cursor.current)return;const node=cursor.current;document.documentElement.classList.add('reactive-cursor');let frame=0,x=0,y=0;const update=(e:PointerEvent)=>{if(e.pointerType==='touch')return;x=e.clientX;y=e.clientY;node.style.opacity='1';cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{node.style.left=x+'px';node.style.top=y+'px'});const t=e.target instanceof Element?e.target:null;const input=t?.closest('input,textarea');const text=!!input&&!input.matches('[type=checkbox],[type=radio],[type=button],[type=submit],[type=file]');const actionable=!!t?.closest('button:not(:disabled),a[href],[role="button"]:not([aria-disabled="true"]),summary,select:not(:disabled),label,input[type=checkbox]:not(:disabled),input[type=radio]:not(:disabled),input[type=file]:not(:disabled)');const map=t?.closest('[data-cursor]');const mode=text?'text':actionable?'link':map?.getAttribute('data-cursor')||'default';node.dataset.mode=mode;if(label.current)label.current.textContent=mode==='drag'?'DRAG':mode==='pin'?'+':'';};const down=()=>node.classList.add('pressed'),up=()=>node.classList.remove('pressed'),leave=()=>{node.style.opacity='0'};window.addEventListener('pointermove',update,{passive:true});window.addEventListener('pointerdown',down);window.addEventListener('pointerup',up);document.addEventListener('pointerleave',leave);window.addEventListener('blur',leave);return()=>{cancelAnimationFrame(frame);document.documentElement.classList.remove('reactive-cursor');window.removeEventListener('pointermove',update);window.removeEventListener('pointerdown',down);window.removeEventListener('pointerup',up);document.removeEventListener('pointerleave',leave);window.removeEventListener('blur',leave)}},[]);
- return <div className="custom-cursor" aria-hidden="true" ref={cursor}><span ref={label}/></div>;
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
+
+export default function ReactiveCursor(){
+ const cursor=useRef<HTMLDivElement>(null),position=useRef({x:-100,y:-100,visible:false,mode:'default'});
+ const[host,setHost]=useState<HTMLElement|null>(null);
+ // Render in the open dialog so the dot stays above the browser's modal top layer.
+ useEffect(()=>{
+  const media=matchMedia('(hover: hover) and (pointer: fine)');
+  let observer:MutationObserver|undefined;
+  function locateHost(){const dialogs=document.querySelectorAll<HTMLDialogElement>('dialog[open]');setHost(dialogs[dialogs.length-1]??document.body)}
+  function configure(){
+   observer?.disconnect();document.documentElement.classList.toggle('reactive-cursor',media.matches);
+   if(!media.matches){setHost(null);return;}
+   locateHost();observer=new MutationObserver(locateHost);observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open']});
+  }
+  configure();media.addEventListener('change',configure);
+  return()=>{observer?.disconnect();media.removeEventListener('change',configure);document.documentElement.classList.remove('reactive-cursor')};
+ },[]);
+ useLayoutEffect(()=>{const node=cursor.current;if(node){const p=position.current;node.style.left=p.x+'px';node.style.top=p.y+'px';node.style.opacity=p.visible?'1':'0';node.dataset.mode=p.mode}},[host]);
+ useEffect(()=>{
+  let frame=0;
+  function update(e:PointerEvent){
+   if(e.pointerType==='touch')return;
+   const target=e.target instanceof Element?e.target:null;
+   const action=target?.closest('button,a[href],[role="button"],summary,select,label,input:not([type="hidden"]),textarea,[contenteditable="true"],[role="slider"]');
+   const enabled=!!action&&!action.matches(':disabled,[aria-disabled="true"]')&&!(action.matches('label')&&action.querySelector(':disabled'));
+   position.current={x:e.clientX,y:e.clientY,visible:true,mode:enabled?'link':'default'};
+   cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{const node=cursor.current,p=position.current;if(node){node.style.left=p.x+'px';node.style.top=p.y+'px';node.style.opacity='1';node.dataset.mode=p.mode}});
+  }
+  function leave(){position.current.visible=false;if(cursor.current)cursor.current.style.opacity='0'}
+  window.addEventListener('pointermove',update,{passive:true,capture:true});window.addEventListener('pointerdown',update,{passive:true,capture:true});document.addEventListener('pointerleave',leave);window.addEventListener('blur',leave);
+  return()=>{cancelAnimationFrame(frame);window.removeEventListener('pointermove',update,true);window.removeEventListener('pointerdown',update,true);document.removeEventListener('pointerleave',leave);window.removeEventListener('blur',leave)};
+ },[]);
+ return host?createPortal(<div className="custom-cursor" aria-hidden="true" ref={cursor}/>,host):null;
 }

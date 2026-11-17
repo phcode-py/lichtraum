@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import ts from '../node_modules/typescript/lib/typescript.js';
 const moduleUrl=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const server=moduleUrl(`export const createClient=async()=>globalThis.paperEditFixture.db;export const getSessionUser=async()=>globalThis.paperEditFixture.user;export const isCrossOrigin=r=>!!r.headers.get('origin')&&r.headers.get('origin')!==new URL(r.url).origin;`);
-async function route(path){const source=await readFile(new URL(path,import.meta.url),'utf8');const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;return import(moduleUrl(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/papers',new URL('../lib/papers.ts',import.meta.url).href).replaceAll('@/lib/paper-references',new URL('../lib/paper-references.ts',import.meta.url).href)));}
+async function route(path){const source=await readFile(new URL(path,import.meta.url),'utf8');const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;return import(moduleUrl(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/papers',new URL('../lib/papers.ts',import.meta.url).href).replaceAll('@/lib/paper-entry-edits',new URL('../lib/paper-entry-edits.ts',import.meta.url).href).replaceAll('@/lib/paper-references',new URL('../lib/paper-references.ts',import.meta.url).href)));}
 const paperApi=await route('../app/api/papers/[id]/route.ts');
 const entryApi=await route('../app/api/papers/[id]/entries/route.ts');
 const roomApi=await route('../app/api/community/route.ts');
@@ -20,7 +20,7 @@ function fixture(){
   update(value){this.value=value;return this;}
   upsert(value){this.newValue=value;return this;}
   insert(value){this.newValue={id:"new-entry",created_at:"2026-11-17T14:00:00Z",...value};return this;}
-  async maybeSingle(){let row=rows[this.table].find(r=>this.filters.every(f=>f(r)));if(this.newValue){row={...this.newValue};rows[this.table].push(row);writes.push(this.newValue)}else if(row&&this.value){Object.assign(row,this.value);writes.push(this.value)}return {data:row?structuredClone(row):null,error:null};}
+  async maybeSingle(){let row=rows[this.table].find(r=>this.filters.every(f=>f(r)));if(this.table==='correspondence_papers'&&row&&!row.shared&&row.owner!==globalThis.paperEditFixture.user?.id)row=undefined;if(this.newValue){row={...this.newValue};rows[this.table].push(row);writes.push(this.newValue)}else if(row&&this.value){Object.assign(row,this.value);writes.push(this.value)}return {data:row?structuredClone(row):null,error:null};}
   single(){return this.maybeSingle();}
  }
  const state={user:{id:'owner',name:'Architect'},db:{storage:{from:()=>({info:async()=>({data:{size:100,contentType:"image/png"},error:null}),createSignedUrls:async keys=>({data:keys.map(path=>({path,signedUrl:"https://preview.invalid/"+path}))})})},from:table=>new Query(table),rpc(name,args){rpcs.push(args);return {maybeSingle:async()=>{assert.ok(['edit_correspondence_paper','edit_working_note'].includes(name));const r=rows.correspondence_papers[0];Object.assign(r,{title:args.paper_title,material:args.paper_material,shared:args.paper_shared,...(args.paper_category?{category:args.paper_category}:{})});return {data:structuredClone(r),error:null}}}}}};
@@ -58,8 +58,8 @@ test('image-only paper references require an owned upload and return a signed im
  const f=fixture(),key='owner/12345678-1234-1234-1234-123456789abc';
  assert.equal((await entryApi.POST(request({imageKey:key.replace('owner/','partner/')}),params)).status,400);
  assert.equal(f.writes.length,0);
- const r=await entryApi.POST(request({imageKey:key}),params);assert.equal(r.status,201);
- const {message}=await r.json();assert.equal(message.content,'Reference image');assert.equal(message.hasImage,true);assert.equal(message.imageUrl,'https://preview.invalid/'+key);
+ const r=await entryApi.POST(request({imageKey:key,imageName:'IMG_1234'}),params);assert.equal(r.status,201);
+ const {message}=await r.json();assert.equal(message.content,'[paper-reference:v1]');assert.equal(message.hasImage,true);assert.equal(message.imageUrl,'https://preview.invalid/'+key);
  assert.equal(f.rows.correspondence_entries.at(-1).image_key,key);
 });
 test('editing an image caption retains its original attachment',async()=>{
@@ -92,4 +92,39 @@ test('removal setup errors leave the paper in place and explain the missing setu
  const f=fixture();f.state.db.rpc=async()=>({data:null,error:{code:'PGRST202'}});
  const response=await paperApi.DELETE(request({confirmed:true}),params);
  assert.equal(response.status,503);assert.match((await response.json()).error,/database setup/);assert.equal(f.rows.correspondence_papers.length,1);
+});
+
+test('a shared-paper batch edits all authors entries and can detach a reference without deleting its file',async()=>{
+ const f=fixture();f.state.user.id='partner';let call;
+ f.rows.correspondence_entries[0].image_key='owner/12345678-1234-1234-1234-123456789abc';
+ f.state.db.rpc=async(name,args)=>{call={name,args};const entry=f.rows.correspondence_entries[0];Object.assign(entry,{content:args.changes[0].content,image_key:null});return {data:[entry],error:null}};
+ const r=await entryApi.PATCH(request({entries:[{entryId:'entry',content:'Revised together',imageKey:null}]}),params);
+ assert.equal(r.status,200);assert.equal(call.name,'edit_paper_entries');assert.equal(call.args.target_paper,'paper');
+ const {messages}=await r.json();assert.equal(messages[0].author,'Architect');assert.equal(f.rows.correspondence_entries[0].owner,'owner');assert.equal(f.rows.correspondence_entries[0].created_at,'2026-11-17T10:01:00Z');assert.equal(messages[0].hasImage,undefined);
+});
+test('batch editing rejects inaccessible papers, duplicate entries and another person’s uploaded replacement',async()=>{
+ const f=fixture();let called=0;f.state.db.rpc=async()=>{called++;return {data:[],error:null}};
+ assert.equal((await entryApi.PATCH(request({entries:[{entryId:'entry',content:'A'},{entryId:'entry',content:'B'}]}),params)).status,400);
+ assert.equal((await entryApi.PATCH(request({entries:[{entryId:'entry',content:'A',imageKey:'other/12345678-1234-1234-1234-123456789abc'}]}),params)).status,400);
+ f.rows.correspondence_papers[0].shared=false;f.state.user.id='partner';
+ assert.equal((await entryApi.PATCH(request({entries:[{entryId:'entry',content:'A'}]}),params)).status,404);assert.equal(called,0);
+});
+test('chat batch retains original authors and missing setup leaves edits untouched',async()=>{
+ const f=fixture(),before=structuredClone(f.rows.messages);f.state.db.rpc=async()=>({data:null,error:{code:'PGRST202'}});
+ const response=await roomApi.PATCH(request({entries:[{entryId:'room-note',content:'New words'}]}));assert.equal(response.status,503);assert.match((await response.json()).error,/database setup/);assert.deepEqual(f.rows.messages,before);
+});
+
+test('replacement files come from the editor’s own folder while original authorship stays intact',async()=>{
+ const f=fixture();f.state.user.id='partner';const key='partner/12345678-1234-1234-1234-123456789abc';let sent;
+ f.state.db.rpc=async(name,args)=>{sent=args.changes[0];return {data:[{...f.rows.correspondence_entries[0],image_key:key,content:sent.content}],error:null}};
+ const response=await entryApi.PATCH(request({entries:[{entryId:'entry',content:'A new reference',imageKey:key}]}),params);
+ assert.equal(response.status,200);assert.equal(sent.imageKey,key);const {messages}=await response.json();assert.equal(messages[0].author,'Architect');assert.equal(messages[0].authorId,'owner');assert.equal(messages[0].hasImage,true);
+});
+
+test('removing an entry returns its ID while retaining the original note and reference in storage',async()=>{
+ const f=fixture(),original=structuredClone(f.rows.correspondence_entries[0]);let payload;
+ f.state.db.rpc=async(name,args)=>{payload=args.changes[0];const row=f.rows.correspondence_entries[0];row.deleted_at='2026-11-18T00:00:00Z';return {data:[row],error:null}};
+ const r=await entryApi.PATCH(request({entries:[{entryId:'entry',delete:true}]}),params);
+ assert.equal(r.status,200);const result=await r.json();assert.deepEqual(result.deletedEntryIds,['entry']);assert.deepEqual(result.messages,[]);assert.equal(payload.delete,true);
+ assert.equal(f.rows.correspondence_entries[0].content,original.content);assert.equal(f.rows.correspondence_entries[0].owner,original.owner);assert.equal(f.rows.correspondence_entries.length,1);
 });

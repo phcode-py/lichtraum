@@ -30,7 +30,7 @@ export default function SiteNavigation({active,onOpen,onNavigate}:{active:string
   return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',keyboard)};
  },[open]);
  return <div className="site-navigation" ref={container}>
-  <button ref={trigger} className="navigation-trigger" aria-label="Menu" aria-expanded={open} aria-controls="site-sections" onClick={()=>{if(!open){onOpen();setPreview(null)}setOpen(value=>!value)}}><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="M2 5h32M2 14h32M2 23h32"/></svg></button>
+  <button ref={trigger} className="navigation-trigger" aria-label="Menu" aria-expanded={open} aria-controls="site-sections" onClick={()=>{if(!open){onOpen();setPreview(null)}setOpen(value=>!value)}}><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path className="navigation-line navigation-line-top" d="M2 9h32"/><path className="navigation-line navigation-line-bottom" d="M2 19h32"/></svg></button>
   <nav id="site-sections" className="navigation-sheet" data-open={open} aria-hidden={!open} inert={!open} aria-label="Main navigation">
    <div className="navigation-heading" aria-label="Lichtraum Zürich"><span>LICHTRAUM</span><span>ZÜRICH</span></div>
    <div className="navigation-content">

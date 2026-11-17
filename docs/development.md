@@ -164,4 +164,30 @@ Hover/focus notes are small footnotes prioritising light/reflection types and ph
 
 Scrolling lifts a 90% paper-coloured information sheet from the photo's own lower edge. The sheet is clipped within the image and can cover its entire surface. A sticky figure keeps the photograph centred while the dialog's scroll distance drives the reveal; after full reveal, longer notes scroll internally. Scrolling back lowers the sheet. A subtle button also reveals the notes for keyboard users, and Escape, close, or the outside margin returns to the same gallery position. Hidden notes are excluded from focus and accessibility until the reveal starts.
 
-The native pointer is explicitly restored within the top-layer modal and its backdrop, since the site's custom cursor otherwise sits behind it. No backend data or image files are changed by these viewing interactions.
+The blue-dot cursor is portaled into an open native dialog so it remains visible above the top-layer modal and its backdrop. No backend data or image files are changed by these viewing interactions.
+
+
+## Whole-sheet entry editing and permanent chat
+
+The existing single pencil opens the title/options and every entry editor together; there are no per-entry pencils. Save changes batches modified entry text and reference replacements/removals, then saves the sheet settings. Cancel discards unsaved local edits. Replacing/removing a reference changes the entry's attachment only; the old stored file is retained. Original authorship and creation timestamps are preserved. Edits on shared sheets can include both authors' entries; private sheets remain restricted to their owner. New uploads must come from the current editor's own storage folder.
+
+`PATCH /api/papers/[id]/entries` and `PATCH /api/community` accept an `entries` array. Missing imageKey keeps an attachment, null detaches it, and a validated owned key replaces/adds it. Batch validation and database functions reject inaccessible/unknown entries. Existing entry batches update atomically; sheet metadata remains a separate request, and failed saves keep the editor open. The legacy single-entry API payload retains its earlier author-only checks.
+
+The built-in messages sheet is numbered **000**, remains present through filters, stays movable, and cannot be deleted. It shows “chat of Lena and Mona” below its dates. Lena's messages align left and Mona's right using stable authorship, with small author/time labels. Chat polling runs every three seconds while visible, with a scrollable history that follows new messages only when near its end. The sheet uses existing messages, never fabricated chat content. Dates come from the first creation and latest known edit.
+
+`20261117070000_collaborative_paper_entries.sql` is **prepared only** and requires the earlier reference/removal migrations. It adds entry-edit timestamps and guarded shared-edit RPCs, allowing a collaborator's owned replacement file without rewriting the original author's identity. It does not edit existing notes or delete files. Live application changes storage/access behavior and must be coordinated with Philipp separately; code upload does not apply it.
+
+## Optional media captions
+
+Image/video pickers show the reference with no filename label. A user-written caption is optional; filenames are never used as automatic captions. Media-only notes use a versioned internal text marker to satisfy the existing nonempty-content constraint; the renderer hides that marker. Existing user-written captions and notes are preserved. No storage migration is required for this caption behavior.
+
+### Rewriting and removing ordinary-paper entries
+
+The sheet pencil enables rewriting every entry. A small trash control appears in each ordinary entry's edit controls; it marks that entry for removal and provides Undo. Only the sheet's Save changes action commits the staged removal. Cancel leaves existing entries untouched. The batch payload uses delete:true for these explicit removals. Rows are archived with a nullable deleted_at timestamp and hidden by a restrictive read policy; original text, authorship, timestamps and stored reference files are retained. The prepared collaborative-entry migration includes this behavior and is not applied automatically. Chat messages remain editable without this ordinary-paper removal control.
+
+The introductory sequence list and “Walk together…” copy have been removed from the Light atlas panel, and the “Record a walk as you go…” summary has been removed from Reflective walks, following the user's marked selections.
+
+
+## Taped Walks panel
+
+The Walks panel uses two blue tape strips over its upper edge, an icon-only close control, and a single Reflective walks heading. Start walk and Add a past walk form a compact 14px pair with 24px rows and no extra vertical gap. The saved walks follow directly without a section divider or count header; each keeps its numbered index, enlarged title, date and recorded totals. Only the pencil appears beside an owned walk. Its delete control is inside the existing editor and still opens the explicit deletion confirmation; opening/cancelling the editor does not change a walk.

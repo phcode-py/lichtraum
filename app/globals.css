@@ -35,30 +35,11 @@
 .maplibregl-marker.photo-marker.active{outline:1px solid #000;outline-offset:3px}
 .maplibregl-marker.photo-marker:after{border-top-color:#000}
 .chosen-point{height:15px;width:15px;background:#000;border:3px solid #fff;outline:1px solid #000;border-radius:50%}
-.custom-cursor{display:none;position:fixed;left:-100px;top:-100px;z-index:10000;width:10px;height:10px;background:var(--blue);border:1px solid var(--blue);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:width .16s,height .16s,background .16s,border-radius .16s,box-shadow .16s,opacity .12s;align-items:center;justify-content:center;will-change:left,top}
-.custom-cursor span{font-size:20px;line-height:1;color:var(--blue);font-weight:400}
-.custom-cursor[data-mode=link]{width:16px;height:16px;border-radius:50%;background:var(--blue);border-color:transparent;box-shadow:0 0 5px 2px #2446e866,0 0 14px 5px #2446e82e}
-.custom-cursor[data-mode=link] span{display:none}
-.custom-cursor[data-mode=drag]{width:46px;height:46px;background:#fff9}
-.custom-cursor[data-mode=drag] span{font-size:7px;font-weight:700;letter-spacing:.5px}
-.custom-cursor[data-mode=pin]{width:35px;height:35px;background:#fff9;border-radius:0}
-.custom-cursor[data-mode=pin] span{font-size:26px;font-weight:300}
-.custom-cursor[data-mode=text]{width:2px;height:23px;border-radius:0}
-.custom-cursor.pressed{width:16px!important;height:16px!important;background:var(--blue)!important;border-radius:50%!important}
-.custom-cursor.pressed span{visibility:hidden}
+.custom-cursor{display:none;position:fixed;left:-100px;top:-100px;z-index:2147483647;width:14px;height:14px;background:var(--blue);border:1px solid var(--blue);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:0;transition:width .16s,height .16s,background .16s,box-shadow .16s,opacity .12s;align-items:center;justify-content:center;will-change:left,top}
+.custom-cursor[data-mode=link]{width:26px;height:26px;background:#3857ed;box-shadow:0 0 5px 2px #2446e866,0 0 14px 5px #2446e82e}
 @media(hover:hover) and (pointer:fine){.reactive-cursor,.reactive-cursor *{cursor:none!important}.custom-cursor{display:flex}}
 @media(prefers-reduced-motion:reduce){.custom-cursor{transition:none}}
 
-/* Modal dialogs sit above the page cursor in the browser's top layer. */
-@media(hover:hover) and (pointer:fine){
- .reactive-cursor:has(dialog:modal),.reactive-cursor:has(dialog:modal) *{cursor:auto!important}
- .reactive-cursor:has(dialog:modal) :is(button,a,[role="button"],select,summary,input[type="checkbox"],input[type="radio"],input[type="file"]){cursor:pointer!important}
- .reactive-cursor:has(dialog:modal) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),textarea,[contenteditable="true"]){cursor:text!important}
- .reactive-cursor:has(dialog:modal) input[type="range"]{cursor:ew-resize!important}
- .reactive-cursor:has(dialog:modal) :disabled{cursor:wait!important}
- .reactive-cursor:has(dialog:modal) dialog::backdrop{cursor:auto!important}
- .reactive-cursor:has(dialog:modal) .custom-cursor{display:none}
-}
 
 body,button,input,select,textarea,h1,h2,h3,.maplibregl-map,.custom-cursor,.maplibregl-ctrl-attrib{font-family:var(--font-interface)!important}
 .district-label{font-family:var(--font-interface);font-size:8px;letter-spacing:1.1px;color:#000;background:#fff;padding:3px 5px;pointer-events:none;z-index:1;line-height:1.2}
@@ -226,7 +207,7 @@ main:has(.navigation-trigger[aria-expanded=true]) .map-panel:after{background:no
 .navigation-trigger{width:44px;justify-content:center}
 .navigation-trigger svg{width:36px;height:28px}
 .topbar-actions .walk-ring{width:13px;height:13px;border:2px solid currentColor;border-radius:50%;flex-shrink:0}
-.topbar-actions .primary svg{width:32px;height:32px;flex-shrink:0}
+.topbar-actions .primary svg,.board-new>svg,.board-refresh>svg,.paper-filter-trigger>svg{width:32px;height:32px;flex-shrink:0}
 .navigation-trigger[aria-expanded=true]{color:var(--blue)}
 .navigation-sheet{position:absolute;left:0;top:64px;width:360px;max-width:calc(100vw - 60px);padding:15px 4px 30px;background:none;border:0;box-shadow:none;color:var(--blue)}
 .navigation-heading{font-size:21px;font-weight:600;letter-spacing:-.6px;padding-bottom:24px}
@@ -255,7 +236,7 @@ main:has(.navigation-trigger[aria-expanded=true]) .map-panel:after{background:no
  .topbar-actions{right:18px;top:calc(env(safe-area-inset-top) + 18px);gap:18px}
  .topbar-actions .walk-start,.topbar-actions .primary{font-size:15px;letter-spacing:-.5px;min-height:44px;width:auto;padding:0;background:none;color:var(--blue)}
  .topbar-actions .primary{gap:5px}
- .topbar-actions .primary svg{display:block;width:30px;height:30px}
+ .topbar-actions .primary svg,.board-new>svg,.board-refresh>svg,.paper-filter-trigger>svg{display:block;width:30px;height:30px}
  .topbar-actions .primary span{display:inline}
  .navigation-sheet{top:64px;max-width:calc(100vw - 36px);width:345px}
  .navigation-heading{font-size:15px;letter-spacing:-.5px}
@@ -292,11 +273,7 @@ main:has(.workspace.section-open .correspondence-board) .topbar-actions{display:
 .paper-tape:before{content:'';position:absolute;inset:-15px}
 .paper-tape-strip{display:block;width:100%;height:100%;background:var(--blue);opacity:.94;pointer-events:none}
 .paper-tape:active{cursor:grabbing}
-@media(hover:hover) and (pointer:fine){
- .reactive-cursor .paper-tape,.reactive-cursor .paper-tape *{cursor:grab!important}
- .reactive-cursor .paper-tape:active,.reactive-cursor .paper-tape:active *{cursor:grabbing!important}
- .reactive-cursor:has(.paper-tape:hover) .custom-cursor{display:none}
-}
+
 .paper-heading{border-bottom:1px solid #d8dad1;padding:12px 0 25px}
 .paper-heading>p{font-size:8px;line-height:1.7;letter-spacing:.7px;text-transform:uppercase;color:#8b9082;margin:0 0 22px}
 .paper-heading h2{font-size:31px;line-height:1.1;letter-spacing:-1.1px;font-weight:400;margin:0;color:#292c25}
@@ -451,11 +428,7 @@ main:has(.workspace.section-open .correspondence-board) .topbar-actions{display:
  .navigation-links>button{font-size:clamp(32px,10.6vw,72px);letter-spacing:-.055em;line-height:1.15}
 
 }
-@media(hover:hover) and (pointer:fine){
- .reactive-cursor:has(.navigation-trigger[aria-expanded=true]) .site-navigation,.reactive-cursor:has(.navigation-trigger[aria-expanded=true]) .site-navigation *{cursor:auto!important}
- .reactive-cursor:has(.navigation-trigger[aria-expanded=true]) .site-navigation button{cursor:pointer!important}
- .reactive-cursor:has(.navigation-trigger[aria-expanded=true]) .custom-cursor{display:none}
-}
+
 
 main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel .map-tools,.map-panel .map-heading){visibility:hidden}
 
@@ -476,12 +449,12 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 }
 
 /* Give the menu mark a little more presence alongside the large section names. */
-.site-navigation .navigation-trigger{width:60px;height:60px;min-height:60px}
-.site-navigation .navigation-trigger svg{width:52px;height:40px}
+.site-navigation .navigation-trigger{width:72px;height:72px;min-height:72px}
+.site-navigation .navigation-trigger svg{width:64px;height:50px}
 .navigation-sheet .navigation-heading{padding-top:9px}
 @media(max-width:720px){
- .site-navigation .navigation-trigger{width:52px;height:52px;min-height:52px}
- .site-navigation .navigation-trigger svg{width:44px;height:34px}
+ .site-navigation .navigation-trigger{width:64px;height:64px;min-height:64px}
+ .site-navigation .navigation-trigger svg{width:56px;height:44px}
  .navigation-sheet .navigation-heading{padding-top:5px}
 }
 
@@ -683,14 +656,6 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 .gallery-lightbox-notes.notes-revealed{overflow-y:auto;overscroll-behavior:auto}.gallery-focus-scroll-space{height:var(--photo-height)}
 .gallery-lightbox-heading{grid-column:1/-1;display:flex;align-items:flex-start;justify-content:space-between;gap:24px}.gallery-lightbox-heading h2{font-size:16px;font-weight:400;line-height:1.5;letter-spacing:-.3px;color:var(--blue);margin:14px 0 10px}.gallery-lightbox-heading p{font-size:10px;line-height:1.8;color:#727e64}.gallery-lightbox-heading .eyebrow{font-size:8px;color:#929889}.gallery-lightbox-heading .gallery-lightbox-file{font-size:9px;color:#929889;margin-top:18px}.gallery-lightbox-heading>button{display:flex;gap:7px;align-items:center;font-size:10px;color:var(--blue);white-space:nowrap;margin-top:4px}
 .gallery-lightbox-caption{max-width:580px}.gallery-lightbox-notes .photo-conditions,.gallery-lightbox-notes .photo-tag-editor{margin:0;align-self:start}.gallery-lightbox-notes .photo-tag-editor h3,.gallery-lightbox-notes .photo-conditions h3{font-size:14px}.gallery-lightbox-edit{max-width:800px;margin:8dvh auto;padding:24px;background:rgb(250 250 247 / 90%)}.gallery-lightbox-edit .photo-edit-image>img{max-height:60dvh;object-fit:contain}
-/* The page cursor sits below native modal dialogs. Restore the native pointer in
-   the top layer so it stays visible on the photo, controls and transparent margin. */
-html.reactive-cursor:has(.gallery-lightbox[open]){cursor:auto!important}
-html.reactive-cursor:has(.gallery-lightbox[open]) .custom-cursor{display:none}
-html.reactive-cursor .gallery-lightbox,html.reactive-cursor .gallery-lightbox *{cursor:auto!important}
-html.reactive-cursor .gallery-lightbox button,html.reactive-cursor .gallery-lightbox a,html.reactive-cursor .gallery-lightbox select,html.reactive-cursor .gallery-lightbox label{cursor:pointer!important}
-html.reactive-cursor .gallery-lightbox input,html.reactive-cursor .gallery-lightbox textarea{cursor:text!important}
-html.reactive-cursor .gallery-lightbox::backdrop{cursor:default!important}
 @media(max-width:720px){.gallery-card-caption{padding:12px}.gallery-card-caption .gallery-light-label{font-size:9px}.gallery-card-caption p,.gallery-card-caption .gallery-card-author,.gallery-card-caption time,.gallery-card-tags>span{font-size:8px}.gallery-lightbox-close{top:14px;right:14px;font-size:10px}.gallery-focus-track{--photo-height:min(72dvh,calc((100vw - 56px) / var(--photo-ratio)));width:min(calc(100vw - 56px),calc(72dvh * var(--photo-ratio)))}.gallery-lightbox-notes{display:block;padding:24px 20px}.gallery-lightbox-heading{display:block;margin-bottom:26px}.gallery-lightbox-heading h2{font-size:15px}.gallery-lightbox-heading>button{margin:18px 0}.gallery-lightbox-notes .photo-conditions,.gallery-lightbox-notes .photo-tag-editor{margin:24px 0}.gallery-lightbox-edit{margin:8dvh 20px;padding:16px}.gallery-focus-hint{font-size:8px}}
 
 /* Gallery is an expanded view of the same Light atlas panel. */
@@ -717,3 +682,71 @@ html.reactive-cursor .gallery-lightbox::backdrop{cursor:default!important}
 .correspondence-board .board-paper{display:flex;flex-direction:column}
 .paper-notes{display:flex;flex-direction:column;flex:1}
 .paper-add-actions{margin-top:auto;padding-top:20px}
+
+.board-actions .board-new,.board-actions .board-refresh,.board-actions .paper-filter-trigger{display:grid;place-items:center;width:44px;min-width:44px;height:44px;padding:0;gap:0}
+
+@media(hover:hover) and (pointer:fine){html.reactive-cursor,html.reactive-cursor *,html.reactive-cursor dialog::backdrop{cursor:none!important}}
+
+/* Two menu strokes cross at their centre when the index opens. */
+.navigation-trigger .navigation-line{transform-box:fill-box;transform-origin:center;transition:transform .36s cubic-bezier(.22,.61,.36,1)}
+.navigation-trigger[aria-expanded=true] .navigation-line-top{transform:translateY(5px) rotate(45deg)}
+.navigation-trigger[aria-expanded=true] .navigation-line-bottom{transform:translateY(-5px) rotate(-45deg)}
+
+.navigation-sheet .navigation-heading{padding-left:76px}
+.paper-draft-body .paper-format-tools button{display:grid;place-items:center;width:25px;height:25px;padding:0;color:#8a9084}
+.paper-draft-body .paper-reference-draft{position:relative}
+.paper-draft-body .paper-reference-remove{position:absolute;right:0;top:0;width:26px;height:26px;padding:0;background:#fffffc;color:var(--blue)}
+.paper-title-editor::placeholder{color:#a2a699}
+@media(max-width:720px){.navigation-sheet .navigation-heading{padding-left:68px}}
+.navigation-sheet .navigation-heading{height:48px}
+@media(max-width:720px){.navigation-sheet .navigation-heading{height:38px}}
+
+/* One pencil opens the whole sheet; the permanent chat keeps two authors distinct. */
+.paper-entry-editor{margin:0 0 16px}
+.paper-entry-editor .paper-format-tools button{display:grid;place-items:center;width:25px;height:25px;padding:0;color:#8a9084}
+.paper-entry-reference-tools{display:flex;align-items:center;gap:8px;margin-top:8px}
+.paper-entry-reference-tools .paper-reference-add,.paper-reference-detach{display:grid;place-items:center;width:24px;height:24px;min-height:24px;padding:0;margin:0;color:#92988b}
+.correspondence-board .paper-heading .paper-chat-description{margin:10px 0 0;text-transform:none;letter-spacing:0;line-height:1.5;color:#92988b;font:9px 'Courier New',Courier,monospace!important}
+.paper-chat .paper-entries{display:flex;flex-direction:column;gap:16px}
+.paper-chat-message{width:78%;align-self:flex-start;padding:0!important}
+.paper-chat-message.is-right{align-self:flex-end}
+.paper-chat-author{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px 10px;margin-bottom:5px;color:#8c9285}
+.correspondence-board .board-paper .paper-chat-author,.correspondence-board .board-paper .paper-chat-author *,.correspondence-board .board-paper .paper-chat-participants *{font:9px 'Courier New',Courier,monospace!important}
+.paper-chat-author time{opacity:.8}
+.paper-chat-participants{display:flex;justify-content:space-between;color:#a1a596;padding:8px 0 18px}
+.paper-chat .paper-add-actions{padding-top:24px}
+.paper-chat-message .paper-text{padding-right:0}
+
+.correspondence-board .paper-chat .paper-entries{max-height:380px;overflow:auto;scrollbar-width:thin;padding-right:4px}
+
+.paper-entry-reference-tools .paper-entry-delete{display:grid;place-items:center;width:24px;height:24px;padding:0;margin-left:auto;color:#a36a59}
+.paper-entry-removal{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0!important;color:#92988b}
+.correspondence-board .board-paper .paper-entry-removal *{font:10px 'Courier New',Courier,monospace!important}
+.paper-entry-removal p{margin:0;line-height:1.6}.paper-entry-removal button{padding:8px 0;color:var(--blue)}
+
+
+/* Reflective walks is a taped sheet on the map, with a quiet two-action header. */
+.workspace>.sidebar:has(.walk-journal){background:#fffffcf5;box-shadow:1px 3px 9px #25282015}
+.walk-panel-tapes{position:absolute;z-index:650;left:70px;top:100px;width:370px;max-width:calc(100vw - 100px);height:0;pointer-events:none}
+.walk-panel-tapes>span{position:absolute;display:block;width:17px;height:46px;top:-18px;background:var(--blue);opacity:.94;clip-path:polygon(1% 2%,100% 0,98% 98%,0 100%)}
+.walk-panel-tapes>span:first-child{left:43px;transform:rotate(-6deg)}
+.walk-panel-tapes>span:last-child{right:48px;height:49px;transform:rotate(5deg)}
+.workspace .walk-journal>h1{font-size:30px;line-height:1.15;font-weight:400;letter-spacing:-.7px;margin:0 0 22px}
+.workspace .walk-journal .walk-entry-options{align-items:flex-start;gap:0;margin:0 0 27px}
+.workspace .walk-journal .walk-entry-options>button,.workspace .walk-journal .walk-entry-options>button.primary{justify-content:flex-start;width:auto;min-height:24px;padding:0;margin:0;border:0;background:none;color:var(--blue);font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;gap:8px}
+.workspace .walk-journal .walk-entry-options>button svg{width:14px;height:14px}
+.workspace .walk-journal .walk-entry-options>button:hover{text-decoration:underline;text-underline-offset:4px}
+.walk-list>.walk-row-with-actions:first-of-type .walk-row{padding-top:0}
+.workspace .walk-list .walk-row{gap:15px;padding-bottom:21px}
+.workspace .walk-list .walk-row>.walk-stop-index{display:block;border:0;background:none;min-width:39px;width:39px;height:auto;font-size:27px;line-height:1.15;font-weight:400;color:var(--blue)}
+.workspace .walk-list .walk-row strong{font-size:21px;line-height:1.25;font-weight:400;letter-spacing:-.4px}
+.workspace .walk-list .walk-row p{font-size:10px;line-height:1.65;margin-top:7px}
+.workspace .walk-list .walk-row>div>span{font-size:9px;letter-spacing:.2px;margin-top:6px;text-transform:none}
+.sidebar:has(.walk-journal)>.section-close{width:32px;justify-content:center;padding:0}
+.walk-editor .manage-actions .walk-editor-remove{display:grid;place-items:center;min-width:32px;color:#a36a59;margin-right:auto}
+.walk-editor .manage-actions:has(.walk-editor-remove){justify-content:flex-end;gap:20px}
+@media(max-width:720px){
+ .walk-panel-tapes{left:42px;right:16px;top:calc(env(safe-area-inset-top) + 86px);width:auto;max-width:none}
+ .walk-panel-tapes>span:first-child{left:35px}.walk-panel-tapes>span:last-child{right:43px}
+ .workspace .walk-journal>h1{font-size:28px}.workspace .walk-list .walk-row strong{font-size:20px}
+}

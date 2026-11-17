@@ -1,11 +1,11 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,X} from 'lucide-react';
+import {ArrowUpRight,Trash2,X} from 'lucide-react';
 import type {Walk} from '@/lib/walks';
 import {fromZurichInput,parseWalkDetails,zurichInput} from '@/lib/walk-details';
 
 /** One form for adding a past walk and revisiting your own existing walks. */
-export default function WalkEditor({walk,onSaved,onClose}:{walk?:Walk;onSaved:(walk:Walk)=>void;onClose:()=>void}) {
+export default function WalkEditor({walk,onSaved,onClose,onRemove}:{onRemove?:()=>void;walk?:Walk;onSaved:(walk:Walk)=>void;onClose:()=>void}) {
  const dialog=useRef<HTMLDialogElement>(null);
  const [initial]=useState(()=>{
   const end=walk?.endedAt??Math.floor((Date.now()-86_400_000)/60_000)*60_000;
@@ -51,7 +51,7 @@ export default function WalkEditor({walk,onSaved,onClose}:{walk?:Walk;onSaved:(w
     <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)}/><span>Share in our walks<small>{shared?'Visible to everyone signed in to Lichtraum.':'Only you can see this walk.'}</small></span></label>
    </fieldset>
    {error&&<p className="form-error" role="alert">{error}</p>}
-   <div className="manage-actions"><button type="button" disabled={busy} onClick={onClose}>cancel</button><button disabled={busy||!title.trim()}>{busy?'saving…':walk?'save changes':'add past walk'}<ArrowUpRight size={15}/></button></div>
+   <div className="manage-actions">{walk&&onRemove&&walk.status==='ended'&&<button className="walk-editor-remove" type="button" aria-label={'Remove '+(walk.title||'walk')} title="Remove walk" disabled={busy} onClick={onRemove}><Trash2 size={16}/></button>}<button type="button" disabled={busy} onClick={onClose}>cancel</button><button disabled={busy||!title.trim()}>{busy?'saving…':walk?'save changes':'add past walk'}<ArrowUpRight size={15}/></button></div>
   </form>
  </dialog>;
 }
