@@ -60,7 +60,9 @@ export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint
   const drawGuide=()=>{
    const center=m.project([sunPoint.lng,sunPoint.lat]),padding=m.getPadding();
    const width=m.getContainer().clientWidth,height=m.getContainer().clientHeight;
-   const radius=Math.max(0,Math.min(170,center.x-(padding.left??0)-28,width-(padding.right??0)-center.x-28,center.y-(padding.top??0)-28,height-(padding.bottom??0)-center.y-28));
+   // Size depends only on the viewport, never the pin’s distance from an edge.
+   // Panning may move part of the diagram offscreen, but must not collapse it.
+   const radius=1.2*Math.max(24,Math.min(170,(width-(padding.left??0)-(padding.right??0))/2-28,(height-(padding.top??0)-(padding.bottom??0))/2-28));
    const guidePoint=(azimuth:number):[number,number]=>{const angle=(azimuth-m.getBearing())*Math.PI/180;const p=m.unproject([center.x+Math.sin(angle)*radius,center.y-Math.cos(angle)*radius]);return [p.lng,p.lat];};
    const arc=day.map(p=>guidePoint(p.azimuth)),tip=guidePoint(sun.azimuth);
    const data={type:'FeatureCollection' as const,features:[...(arc.length>1?[{type:'Feature' as const,properties:{kind:'arc'},geometry:{type:'LineString' as const,coordinates:arc}}]:[]),{type:'Feature' as const,properties:{kind:'ray'},geometry:{type:'LineString' as const,coordinates:[[sunPoint.lng,sunPoint.lat],tip]}}]};
