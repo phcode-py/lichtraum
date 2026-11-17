@@ -708,6 +708,6 @@ html.reactive-cursor .gallery-lightbox::backdrop{cursor:default!important}
 
 /* Both timestamps share one left edge after a fixed-width label column. */
 .correspondence-board .board-paper .paper-dates,.correspondence-board .board-paper .paper-dates *{font-size:9px}
-.paper-dates{gap:3px;line-height:1.45}
+.paper-dates{gap:0;line-height:16px}
 .paper-dates>span{display:grid;grid-template-columns:12ch minmax(0,1fr);column-gap:10px;align-items:baseline}
 .paper-dates time{margin-left:0;text-align:left}
