@@ -1,16 +1,20 @@
+import {historyPage,historyCursor,HISTORY_PAGE_SIZE} from '@/lib/paper-history';
 import {parsePaperEntryChanges} from '@/lib/paper-entry-edits';
 import {createClient,getSessionUser,isCrossOrigin} from '@/lib/supabase/server';
 import {noteMessages,validReferenceKey,referenceExists,REFERENCE_ONLY_CONTENT} from '@/lib/paper-references';
-export async function GET(_request:Request,{params}:{params:Promise<{id:string}>}){
+export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
  const db=await createClient(),user=await getSessionUser(db);
  if(!user)return Response.json({error:'Sign in to read entries.'},{status:401});
+ const page=historyPage(request);if(page===null)return Response.json({error:'Invalid history page.'},{status:400});
  const {id}=await params;
  const {data:paper,error:paperError}=await db.from('correspondence_papers').select('id').eq('id',id).maybeSingle();
  if(paperError)return Response.json({error:'Entries could not be loaded.'},{status:503});
  if(!paper)return Response.json({error:'Paper not found.'},{status:404});
- const {data,error}=await db.from('correspondence_entries').select('*').eq('paper_id',id).order('created_at',{ascending:false}).limit(100);
+ let history=db.from('correspondence_entries').select('*').eq('paper_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(HISTORY_PAGE_SIZE+1);
+ if(page.filter)history=history.or(page.filter);
+ const {data,error}=await history;
  if(error)return Response.json({error:'Entries could not be loaded.'},{status:503});
- return Response.json({messages:await noteMessages(db,data.reverse(),user.id)},{headers:{'Cache-Control':'no-store'}});
+ return Response.json({messages:await noteMessages(db,data.slice(0,HISTORY_PAGE_SIZE).reverse(),user.id),hasMore:data.length>HISTORY_PAGE_SIZE,nextCursor:historyCursor(data.slice(0,HISTORY_PAGE_SIZE))},{headers:{'Cache-Control':'no-store'}});
 }
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
  if(isCrossOrigin(request))return new Response('Forbidden',{status:403});

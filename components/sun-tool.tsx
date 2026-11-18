@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {Sun,X} from 'lucide-react';
+import SunWeather from './sun-weather';
 import {daySunPath,solarPosition,sunDayBounds,sunDirection,sunEvents,SUN_ZONE,zurichDate,ZURICH} from '@/lib/sun';
 export default function SunTool({time,onTime,onClose,point=ZURICH,initialLive=true}:{point?:{lat:number;lng:number};initialLive?:boolean;time:number;onTime:(time:number)=>void;onClose:()=>void}){
  const[live,setLive]=useState(initialLive);
@@ -19,5 +20,6 @@ export default function SunTool({time,onTime,onClose,point=ZURICH,initialLive=tr
  <div className="sun-angles"><div><strong>{Math.round(sun.azimuth)}° <span>{sunDirection(sun.azimuth)}</span></strong><span>direction from north</span></div><div><strong>{Math.round(sun.elevation)}°</strong><span>above the horizon</span></div></div>
 
  <div className="sun-events"><span>rise {formatTime(events.sunrise)}</span><span>highest {Math.round(peak)}°</span><span>set {formatTime(events.sunset)}</span></div>
+ <SunWeather time={time} lat={lat} lng={lng}/>
  </section>;
 }

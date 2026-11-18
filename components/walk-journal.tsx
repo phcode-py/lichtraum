@@ -5,17 +5,18 @@ import type {WalkRouteDraft} from '@/lib/walk-route';
 import PhotoEdit from './photo-edit';
 import WalkActions from './walk-actions';
 import WalkEditor from './walk-editor';
-import AtlasMedia from './atlas-media';
+import AtlasPictureCard from './atlas-picture-card';
+import type {GalleryPhoto} from '@/lib/gallery';
 import {formatDuration,type Walk} from '@/lib/walks';
 
-export type Impression={caption?:string;category?:string;shared?:number;mine?:boolean;mediaType?:'photo'|'video';id:string;title:string;url:string;createdAt:number;place:string;walk?:string};
+export type Impression=Omit<GalleryPhoto,'caption'|'lat'|'lng'>&{caption?:string;lat?:number;lng?:number};
 
 const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Europe/Zurich'});
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
 export default function WalkJournal({filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
- const [editingMoment,setEditingMoment]=useState<string|null>(null);
+ const [editingMoment,setEditingMoment]=useState<string|null>(null),[revealedMoment,setRevealedMoment]=useState<string|null>(null);
  const [addingPast,setAddingPast]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
  const walk=walks.find(w=>w.id===selected);
@@ -38,13 +39,7 @@ export default function WalkJournal({filmstripOpen,onFilmstrip,routeDraft,onRout
    {momentForm}
    <section className="walk-stops">
     {!pins.length&&<p className="walk-empty-note">No impressions on this walk.</p>}
-    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&p.mine!==false?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<button className="walk-stop" aria-expanded={editingMoment===p.id} onClick={()=>setEditingMoment(editingMoment===p.id?null:p.id)}>
-     <div className="walk-stop-text">
-      <div><strong>{p.title}</strong><span>{time(p.createdAt)}</span></div>
-      <p>{p.place}</p>
-      <div className="walk-stop-image"><AtlasMedia url={p.url} title={p.title} mediaType={p.mediaType}/></div>
-     </div>
-    </button>}{editingMoment===p.id&&p.mine===false&&p.caption&&<p className="walk-description">{p.caption}</p>}</div>)}
+    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&p.mine!==false?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={p.mine!==false?()=>setEditingMoment(p.id):undefined}/>}</div>)}
    </section>
   </div>;
  }

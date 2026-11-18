@@ -18,16 +18,19 @@ export const mapStyle:StyleSpecification={version:8,sources:{city:{type:'vector'
  {id:'bridges',type:'line',source:'city','source-layer':'transportation',filter:['==',['get','brunnel'],'bridge'],paint:{'line-color':'#fff','line-width':['interpolate',['linear'],['zoom'],12,1.5,17,5]}},
 ]};
 export type MapRoute={id:string;lines:[number,number][][];active:boolean};
-export default function PhotoMap({routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,sunPoint=ZURICH,onSunPoint,sunPicking=false}:{routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
+export default function PhotoMap({routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,onCurrentLocation,sunPoint=ZURICH,onSunPoint,sunPicking=false}:{routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;onCurrentLocation?:(p:{lat:number;lng:number})=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
  const element=useRef<HTMLDivElement>(null),map=useRef<Map|null>(null),lib=useRef<typeof import('maplibre-gl')|null>(null),markers=useRef<Marker[]>([]),labels=useRef<Marker[]>([]),pick=useRef(picking),choose=useRef(onPoint),select=useRef(onSelect);const[ready,setReady]=useState(0),[mapError,setMapError]=useState(false),[bearing,setBearing]=useState(0);
  const routeFocus=useRef<number|null>(null);
  const drawing=useRef(routeDraft),routeChoose=useRef(onRoutePoint);
  useEffect(()=>{drawing.current=routeDraft;routeChoose.current=onRoutePoint},[routeDraft,onRoutePoint]);
  const locationMarker=useRef<Marker|null>(null),location=useRef<[number,number]|null>(null);
  const[locationError,setLocationError]=useState('');
+ const reportLocation=useRef(onCurrentLocation);
+ useEffect(()=>{reportLocation.current=onCurrentLocation},[onCurrentLocation]);
  const showLocation=useCallback((coords:GeolocationCoordinates,center:boolean)=>{
   const m=map.current,M=lib.current;if(!m||!M)return;
   const position:[number,number]=[coords.longitude,coords.latitude];location.current=position;
+  reportLocation.current?.({lat:coords.latitude,lng:coords.longitude});
   if(!locationMarker.current){const dot=document.createElement('span');dot.className='current-location-dot';dot.setAttribute('role','img');dot.setAttribute('aria-label','Your current location');locationMarker.current=new M.Marker({element:dot}).setLngLat(position).addTo(m)}
   else locationMarker.current.setLngLat(position);
   setLocationError('');if(center)m.flyTo({center:position,zoom:16,duration:800,essential:false});

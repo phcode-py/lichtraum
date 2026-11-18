@@ -1,20 +1,25 @@
+import {historyPage,historyCursor,HISTORY_PAGE_SIZE} from '@/lib/paper-history';
 import {parsePaperEntryChanges} from '@/lib/paper-entry-edits';
 import {noteMessages,validReferenceKey,referenceExists,REFERENCE_ONLY_CONTENT} from '@/lib/paper-references';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 
-export async function GET() {
+export async function GET(request:Request) {
+  const page=historyPage(request);if(page===null)return Response.json({error:'Invalid history page.'},{status:400});
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
   if (!user) return Response.json({ error: 'Sign in to open Working notes.' }, { status: 401 });
 
+  let history=supabase.from('messages').select('*').order('created_at',{ascending:false}).order('id',{ascending:false}).limit(HISTORY_PAGE_SIZE+1);
+  if(page.filter)history=history.or(page.filter);
   const [notes,first,latestEdit]=await Promise.all([
-    supabase.from('messages').select('*').order('created_at',{ascending:false}).limit(100),
+    history,
     supabase.from('messages').select('created_at').order('created_at',{ascending:true}).limit(1).maybeSingle(),
     supabase.from('messages').select('updated_at').order('updated_at',{ascending:false,nullsFirst:false}).limit(1).maybeSingle(),
   ]);
   if(notes.error)return Response.json({error:'The chat could not be loaded. Please try again.'},{status:503});
-  const messages=await noteMessages(supabase,notes.data.reverse(),user.id);
-  return Response.json({messages,contributors:[],createdAt:first.data?.created_at?Date.parse(first.data.created_at):undefined,updatedAt:Math.max(0,...messages.map(m=>m.updatedAt),latestEdit.data?.updated_at?Date.parse(latestEdit.data.updated_at):0)||undefined},{headers:{'Cache-Control':'no-store'}});
+  const hasMore=notes.data.length>HISTORY_PAGE_SIZE;
+  const messages=await noteMessages(supabase,notes.data.slice(0,HISTORY_PAGE_SIZE).reverse(),user.id);
+  return Response.json({messages,hasMore,nextCursor:historyCursor(notes.data.slice(0,HISTORY_PAGE_SIZE)),contributors:[],createdAt:first.data?.created_at?Date.parse(first.data.created_at):undefined,updatedAt:Math.max(0,...messages.map(m=>m.updatedAt),latestEdit.data?.updated_at?Date.parse(latestEdit.data.updated_at):0)||undefined},{headers:{'Cache-Control':'no-store'}});
 }
 
 export async function POST(request: Request) {
@@ -45,14 +50,14 @@ export async function PATCH(request:Request){
  if(Array.isArray(b?.entries)){
   const changes=parsePaperEntryChanges(b.entries);
   if(!changes)return Response.json({error:'Keep entries within 800 characters and choose valid references.'},{status:400});
-  if(changes.some(change=>change.delete))return Response.json({error:'Chat messages can be edited, but not removed here.'},{status:400});
   const valid=await Promise.all(changes.map(change=>change.imageKey==null||validReferenceKey(change.imageKey,user.id)&&referenceExists(db,change.imageKey)));
   if(valid.some(v=>!v))return Response.json({error:'Upload a valid reference file first.'},{status:400});
 
   const {data,error}=await db.rpc('edit_room_entries',{changes});
   if(error)return Response.json({error:['PGRST202','42883','42703'].includes(error.code)?'Editing all entries needs the one-time database setup. Your edits are still here.':'Your entries could not be saved. Your edits are still here.'},{status:error.code==='42501'?403:503});
   if(!data||data.length!==changes.length)return Response.json({error:'Not all entries could be saved. Your edits are still here.'},{status:503});
-  return Response.json({messages:await noteMessages(db,data,user.id)});
+  const removed=data.filter((row:{deleted_at?:string|null})=>row.deleted_at);
+  return Response.json({messages:await noteMessages(db,data.filter((row:{deleted_at?:string|null})=>!row.deleted_at),user.id),deletedEntryIds:removed.map((row:{id:string})=>row.id)});
  }
  if(!b||typeof b.entryId!=='string'||typeof b.content!=='string'||!b.content.trim()||b.content.trim().length>800)return Response.json({error:'Write a note of 1–800 characters.'},{status:400});
  const {data:m,error}=await db.from('messages').update({content:b.content.trim()}).eq('id',b.entryId).eq('owner',user.id).select('*').maybeSingle();
