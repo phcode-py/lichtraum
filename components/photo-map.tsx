@@ -3,6 +3,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Map,Marker,StyleSpecification,GeoJSONSource,LngLatBoundsLike} from 'maplibre-gl';
 import {ArrowUp,CircleDot,Sun} from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type {WalkRouteDraft} from '@/lib/walk-route';
 import {observeMapLocation} from '@/lib/map-location';
 import {daySunPath,solarPosition,zurichDate,ZURICH} from '@/lib/sun';
 type Photo={mediaType?:'photo'|'video';id:string;title:string;place:string;lat:number;lng:number;url:string;caption:string;createdAt:number;source?:string};
@@ -17,8 +18,11 @@ export const mapStyle:StyleSpecification={version:8,sources:{city:{type:'vector'
  {id:'bridges',type:'line',source:'city','source-layer':'transportation',filter:['==',['get','brunnel'],'bridge'],paint:{'line-color':'#fff','line-width':['interpolate',['linear'],['zoom'],12,1.5,17,5]}},
 ]};
 export type MapRoute={id:string;lines:[number,number][][];active:boolean};
-export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,sunPoint=ZURICH,onSunPoint,sunPicking=false}:{sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
+export default function PhotoMap({routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,sunPoint=ZURICH,onSunPoint,sunPicking=false}:{routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
  const element=useRef<HTMLDivElement>(null),map=useRef<Map|null>(null),lib=useRef<typeof import('maplibre-gl')|null>(null),markers=useRef<Marker[]>([]),labels=useRef<Marker[]>([]),pick=useRef(picking),choose=useRef(onPoint),select=useRef(onSelect);const[ready,setReady]=useState(0),[mapError,setMapError]=useState(false),[bearing,setBearing]=useState(0);
+ const routeFocus=useRef<number|null>(null);
+ const drawing=useRef(routeDraft),routeChoose=useRef(onRoutePoint);
+ useEffect(()=>{drawing.current=routeDraft;routeChoose.current=onRoutePoint},[routeDraft,onRoutePoint]);
  const locationMarker=useRef<Marker|null>(null),location=useRef<[number,number]|null>(null);
  const[locationError,setLocationError]=useState('');
  const showLocation=useCallback((coords:GeolocationCoordinates,center:boolean)=>{
@@ -41,10 +45,10 @@ export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint
  }
  const sunPick=useRef(sunPicking),sunChoose=useRef(onSunPoint),restoreOriginFocus=useRef(false);
  useEffect(()=>{sunPick.current=sunPicking;sunChoose.current=onSunPoint;pick.current=picking;choose.current=onPoint;select.current=onSelect;},[sunPicking,onSunPoint,picking,onPoint,onSelect]);
- useEffect(()=>{let cancelled=false;let observer:ResizeObserver|undefined;import('maplibre-gl').then(M=>{if(cancelled||!element.current)return;lib.current=M;const m=new M.Map({container:element.current,style:mapStyle,center:[8.5399,47.3709],zoom:14.7,minZoom:2,maxZoom:18,pitchWithRotate:false,rollEnabled:false,minPitch:0,maxPitch:0,dragRotate:true,touchZoomRotate:true,touchPitch:false,attributionControl:{compact:true},canvasContextAttributes:{antialias:false}});map.current=m;const districts=[['CITY',47.3730,8.5347],['ALTSTADT',47.3717,8.5439],['ENGE',47.3618,8.5284],['SEEFELD',47.3606,8.5515],['HOCHSCHULEN',47.376,8.55],['LANGSTRASSE',47.3788,8.5260]] as const;districts.forEach(([name,lat,lng])=>{const label=document.createElement('span');label.className='district-label';label.textContent=name;labels.current.push(new M.Marker({element:label}).setLngLat([lng,lat]).addTo(m));});m.on('rotate',()=>setBearing(m.getBearing()));m.on('load',()=>{if(!cancelled){setReady(n=>n+1);setMapError(false)}});m.on('error',()=>setMapError(true));m.on('idle',()=>{if(m.areTilesLoaded())setMapError(false)});m.on('click',e=>{if(pick.current)choose.current({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(sunPick.current)sunChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng})});observer=new ResizeObserver(()=>{m.resize();});observer.observe(element.current);}).catch(()=>setMapError(true));return()=>{cancelled=true;observer?.disconnect();markers.current.forEach(m=>m.remove());labels.current.forEach(m=>m.remove());labels.current=[];map.current?.remove();map.current=null;};},[]);
+ useEffect(()=>{let cancelled=false;let observer:ResizeObserver|undefined;import('maplibre-gl').then(M=>{if(cancelled||!element.current)return;lib.current=M;const m=new M.Map({container:element.current,style:mapStyle,center:[8.5399,47.3709],zoom:14.7,minZoom:2,maxZoom:18,pitchWithRotate:false,rollEnabled:false,minPitch:0,maxPitch:0,dragRotate:true,touchZoomRotate:true,touchPitch:false,attributionControl:{compact:true},canvasContextAttributes:{antialias:false}});map.current=m;const districts=[['CITY',47.3730,8.5347],['ALTSTADT',47.3717,8.5439],['ENGE',47.3618,8.5284],['SEEFELD',47.3606,8.5515],['HOCHSCHULEN',47.376,8.55],['LANGSTRASSE',47.3788,8.5260]] as const;districts.forEach(([name,lat,lng])=>{const label=document.createElement('span');label.className='district-label';label.textContent=name;labels.current.push(new M.Marker({element:label}).setLngLat([lng,lat]).addTo(m));});m.on('rotate',()=>setBearing(m.getBearing()));m.on('load',()=>{if(!cancelled){setReady(n=>n+1);setMapError(false)}});m.on('error',()=>setMapError(true));m.on('idle',()=>{if(m.areTilesLoaded())setMapError(false)});m.on('click',e=>{if(drawing.current?.picking)routeChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(pick.current)choose.current({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(sunPick.current)sunChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng})});observer=new ResizeObserver(()=>{m.resize();});observer.observe(element.current);}).catch(()=>setMapError(true));return()=>{cancelled=true;observer?.disconnect();markers.current.forEach(m=>m.remove());labels.current.forEach(m=>m.remove());labels.current=[];map.current?.remove();map.current=null;};},[]);
  useEffect(()=>{if(!ready||!lib.current||!map.current)return;markers.current.forEach(m=>m.remove());markers.current=[];const M=lib.current;photos.forEach(p=>{const node=document.createElement('button');node.className='photo-marker '+(p.id===selected?'active':'');node.setAttribute('aria-label',p.title+' at '+p.place);node.dataset.cursor='view';if(p.mediaType==='video'){const icon=document.createElement('span');icon.className='video-map-icon';icon.textContent='▶';icon.setAttribute('aria-hidden','true');node.appendChild(icon);}else{const img=document.createElement('img');img.src=p.url;img.alt='';node.appendChild(img);}node.addEventListener('click',e=>{e.stopPropagation();select.current(p)});const marker=new M.Marker({element:node,anchor:'bottom',offset:[0,-10]}).setLngLat([p.lng,p.lat]).addTo(map.current!);markers.current.push(marker);});if(point){const node=document.createElement('span');node.className='chosen-point';node.setAttribute('aria-label','Selected photo location');markers.current.push(new M.Marker({element:node}).setLngLat([point.lng,point.lat]).addTo(map.current));}},[ready,photos,selected,point]);
  useEffect(()=>{const p=photos.find(p=>p.id===selected);if(p)map.current?.flyTo({center:[p.lng,p.lat],zoom:16,duration:700,essential:false})},[selected,photos]);
- // Walk routes: the active walk in blue, others as quiet grey lines.
+ // Walk routes: the active walk in royal blue, others in light blue.
  const activeRoute=routes.find(r=>r.active)?.id??'';
  useEffect(()=>{const m=map.current;if(!ready||!m)return;
   const data={type:'FeatureCollection' as const,features:routes.filter(r=>r.lines.length).map(r=>({type:'Feature' as const,properties:{active:r.active},geometry:{type:'MultiLineString' as const,coordinates:r.lines}}))};
@@ -52,13 +56,35 @@ export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint
   if(source)source.setData(data);
   else{m.addSource('walk-routes',{type:'geojson',data});
    m.addLayer({id:'walk-routes-casing',type:'line',source:'walk-routes',filter:['get','active'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':8}});
-   m.addLayer({id:'walk-routes-line',type:'line',source:'walk-routes',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['case',['get','active'],'#2446e8','#8f8f88'],'line-width':['case',['get','active'],3.5,1.5],'line-opacity':['case',['get','active'],1,.7]}});}
+   m.addLayer({id:'walk-routes-line',type:'line',source:'walk-routes',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['case',['get','active'],'#2446e8','#91b6ff'],'line-width':['case',['get','active'],3.5,2],'line-opacity':1}});}
+  m.setPaintProperty('walk-routes-line','line-color',['case',['get','active'],'#2446e8','#91b6ff']);
+  m.setPaintProperty('walk-routes-line','line-width',['case',['get','active'],3.5,2]);
+  m.setPaintProperty('walk-routes-line','line-opacity',1);
  },[ready,routes]);
  useEffect(()=>{const m=map.current,r=routes.find(r=>r.active);if(!ready||!m||!r)return;const pts=r.lines.flat();if(!pts.length)return;
   const lng=pts.map(p=>p[0]),lat=pts.map(p=>p[1]);
   m.fitBounds([[Math.min(...lng),Math.min(...lat)],[Math.max(...lng),Math.max(...lat)]] as LngLatBoundsLike,{padding:{top:90,right:70,bottom:110,left:70},maxZoom:16.5,duration:650});
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[ready,activeRoute]);
+ // A local draft is independent of saved routes until the walk is saved.
+ useEffect(()=>{const m=map.current,M=lib.current;if(!ready||!m||!M)return;
+  const points=routeDraft?.points??[];
+  const data={type:'FeatureCollection' as const,features:points.length>1?[{type:'Feature' as const,properties:{},geometry:{type:'LineString' as const,coordinates:points}}]:[]};
+  const source=m.getSource('walk-draft') as GeoJSONSource|undefined;
+  if(source)source.setData(data);else{m.addSource('walk-draft',{type:'geojson',data});m.addLayer({id:'walk-draft-casing',type:'line',source:'walk-draft',paint:{'line-color':'#fff','line-width':7}});m.addLayer({id:'walk-draft-line',type:'line',source:'walk-draft',paint:{'line-color':'#2446e8','line-width':3}})}
+  const draftMarkers=points.map((point,index)=>{
+   const node=document.createElement('button');node.className='walk-draft-point';node.textContent=String(index+1);node.type='button';
+   node.setAttribute('aria-label',routeDraft?.picking?`Route point ${index+1}. Drag to move, arrow keys to adjust, Delete to remove.`:`Route point ${index+1}`);
+   node.addEventListener('click',e=>e.stopPropagation());
+   const marker=new M.Marker({element:node,draggable:!!routeDraft?.picking}).setLngLat(point).addTo(m);
+   marker.on('dragend',()=>onRouteMove?.(index,marker.getLngLat()));
+   node.addEventListener('keydown',e=>{if(!routeDraft?.picking)return;if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();e.stopPropagation();onRouteRemove?.(index);return;}const moves:Record<string,[number,number]>={ArrowUp:[0,.0001],ArrowDown:[0,-.0001],ArrowLeft:[-.00015,0],ArrowRight:[.00015,0]};const move=moves[e.key];if(move){e.preventDefault();e.stopPropagation();onRouteMove?.(index,{lng:point[0]+move[0],lat:point[1]+move[1]})}});
+   return marker;
+  });
+  if(routeFocus.current!==null&&draftMarkers.length){draftMarkers[Math.min(routeFocus.current,draftMarkers.length-1)].getElement().focus({preventScroll:true});routeFocus.current=null;}
+  return()=>{const focused=draftMarkers.findIndex(marker=>marker.getElement()===document.activeElement);if(focused>=0)routeFocus.current=focused;draftMarkers.forEach(marker=>marker.remove())};
+ },[ready,routeDraft,onRouteMove,onRouteRemove]);
+
  useEffect(()=>{if(reset)map.current?.flyTo({center:[8.5399,47.3709],zoom:14.7,duration:700})},[reset]);
 
  // Keep the study point in the uncovered part of the map, including on phones.
@@ -99,5 +125,5 @@ export default function PhotoMap({photos,selected,onSelect,picking,point,onPoint
   return()=>{restoreOriginFocus.current=document.activeElement===origin;m.off('move',drawGuide);m.off('resize',drawGuide);marker.remove();originMarker.remove()};
  },[ready,sunTime,sunPoint]);
 
- return <><div className={'map-canvas '+(picking||sunPicking?'picking':'')} data-cursor={picking||sunPicking?'pin':'drag'} ref={element} aria-label="Interactive map"/><div className="map-tools" role="group" aria-label="Map controls"><button aria-label="Zoom in" title="Zoom in" onClick={()=>map.current?.zoomIn()}><span aria-hidden="true">+</span></button><button aria-label="Zoom out" title="Zoom out" onClick={()=>map.current?.zoomOut()}><span aria-hidden="true">−</span></button><button aria-label="Point map north" title="North" onClick={()=>map.current?.easeTo({bearing:0,pitch:0})}><ArrowUp aria-hidden="true" style={{transform:`rotate(${-bearing}deg)`}}/></button><button aria-label="Show my location" title="Show my location" onClick={recenterLocation}><CircleDot aria-hidden="true"/></button><button aria-label="Sun position" title="Sun position through the day" aria-expanded={sunOpen} onClick={onSunToggle}><Sun aria-hidden="true"/></button></div>{locationError&&<div className="map-location-status" role="status">{locationError}<button onClick={recenterLocation}>try again</button></div>}{mapError&&<div className="map-error">Map unavailable. Check your connection and reload.</div>}</>;
+ return <><div className={'map-canvas '+(picking||sunPicking||routeDraft?.picking?'picking':'')} data-cursor={picking||sunPicking?'pin':'drag'} ref={element} aria-label="Interactive map"/><div className="map-tools" role="group" aria-label="Map controls"><button aria-label="Zoom in" title="Zoom in" onClick={()=>map.current?.zoomIn()}><span aria-hidden="true">+</span></button><button aria-label="Zoom out" title="Zoom out" onClick={()=>map.current?.zoomOut()}><span aria-hidden="true">−</span></button><button aria-label="Point map north" title="North" onClick={()=>map.current?.easeTo({bearing:0,pitch:0})}><ArrowUp aria-hidden="true" style={{transform:`rotate(${-bearing}deg)`}}/></button><button aria-label="Show my location" title="Show my location" onClick={recenterLocation}><CircleDot aria-hidden="true"/></button><button aria-label="Sun position" title="Sun position through the day" aria-expanded={sunOpen} onClick={onSunToggle}><Sun aria-hidden="true"/></button></div>{locationError&&<div className="map-location-status" role="status">{locationError}<button onClick={recenterLocation}>try again</button></div>}{mapError&&<div className="map-error">Map unavailable. Check your connection and reload.</div>}</>;
 }

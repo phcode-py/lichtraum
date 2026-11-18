@@ -206,7 +206,7 @@ main:has(.navigation-trigger[aria-expanded=true]) .map-panel:after{background:no
 .navigation-trigger{display:flex;align-items:center;gap:10px;min-height:44px;padding:0;background:none;border:0;color:var(--blue);font-size:21px;letter-spacing:-.6px;font-weight:600}
 .navigation-trigger{width:44px;justify-content:center}
 .navigation-trigger svg{width:36px;height:28px}
-.topbar-actions .walk-ring{width:13px;height:13px;border:2px solid currentColor;border-radius:50%;flex-shrink:0}
+.walk-ring{width:13px;height:13px;border:2px solid currentColor;border-radius:50%;flex-shrink:0}
 .topbar-actions .primary svg,.board-new>svg,.board-refresh>svg,.paper-filter-trigger>svg{width:32px;height:32px;flex-shrink:0}
 .navigation-trigger[aria-expanded=true]{color:var(--blue)}
 .navigation-sheet{position:absolute;left:0;top:64px;width:360px;max-width:calc(100vw - 60px);padding:15px 4px 30px;background:none;border:0;box-shadow:none;color:var(--blue)}
@@ -750,3 +750,128 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
  .walk-panel-tapes>span:first-child{left:35px}.walk-panel-tapes>span:last-child{right:43px}
  .workspace .walk-journal>h1{font-size:28px}.workspace .walk-list .walk-row strong{font-size:20px}
 }
+
+/* Walk detail follows the numbered journal and keeps navigation in the corners. */
+.workspace .walk-detail>.walk-back{position:absolute;top:10px;left:18px;z-index:1;display:grid;place-items:center;width:32px;min-height:30px;padding:0;margin:0;color:var(--blue);background:none;border:0}
+.workspace .walk-detail .walk-title-row{align-items:flex-start;margin:0 0 14px}
+.workspace .walk-detail .walk-title-row h2{display:flex;align-items:baseline;gap:15px;flex:1;margin:0;font-size:27px;line-height:1.2;font-weight:400;letter-spacing:-.6px}
+.walk-detail-number{color:var(--blue);flex-shrink:0;font-variant-numeric:tabular-nums}
+.workspace .walk-detail .walk-title-row>.owner-actions{margin-top:2px}
+.walk-detail-dates{font-size:10px;line-height:1.7;color:#8b8b81;margin:0 0 24px;font-variant-numeric:tabular-nums}
+.walk-detail-dates p{margin:2px 0 0}
+
+.workspace .walk-editor-inline{position:static;display:block;inset:auto;width:100%;max-width:none;max-height:none;margin:0 0 24px;padding:0;border:0;box-shadow:none;background:none;overflow:visible}
+.walk-editor-inline .upload-fields{padding:0;margin:0;border:0;min-width:0}
+.workspace .walk-editor-inline .walk-inline-title{display:flex;align-items:baseline;gap:15px;margin:0 0 16px}
+.workspace .walk-editor-inline .walk-inline-title input{min-width:0;width:100%;font:400 27px/1.2 var(--font-interface);letter-spacing:-.6px;padding:0 0 5px;border:0;background:none;color:#171717}
+.walk-inline-title>.walk-detail-number{font-size:27px;line-height:1.2}
+.workspace .walk-editor-inline .walk-editor-time{display:flex;flex-wrap:wrap;gap:8px}
+.walk-editor-inline .walk-editor-time>.field{min-width:0;flex:1 1 135px}
+.workspace .walk-editor-inline .field input,.workspace .walk-editor-inline .field textarea{background:none;font-size:11px;padding:7px 0;border:0;border-radius:0;width:100%;min-width:0}
+.workspace .walk-editor-inline .walk-inline-title input{font-size:27px}
+.workspace .walk-editor-inline .walk-description-field{margin:12px 0 18px}
+.workspace .walk-editor-inline .field textarea{font-size:13px;line-height:1.65;resize:vertical}
+.walk-description{font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;margin:-10px 0 24px;color:#55594e}
+.walk-editor-inline .walk-editor-note{font-size:9px;margin:7px 0}
+.walk-editor-inline .manage-actions{display:flex;align-items:center;justify-content:flex-end;gap:18px;margin-top:22px;font-size:11px;color:var(--blue)}
+.walk-editor-inline .manage-actions>button{display:inline-flex;align-items:center;gap:5px;min-height:30px}
+.walk-remove-confirmation{padding:12px 0;border-top:1px solid #d9ded2;margin-top:20px;font-size:12px;line-height:1.6}
+.walk-remove-confirmation button{color:var(--blue);font-size:11px;margin:8px 20px 0 0}
+.workspace .walk-editor-inline .walk-inline-title>.walk-detail-number{color:var(--blue)}
+
+.walk-ring-filled{background:currentColor}
+/* Small Walks annotations share the papers' typewriter face. */
+.workspace .walk-journal :is(.walk-detail-dates,.walk-summary,.walk-row p,.walk-row>div>span,.walk-stats span,.walk-stop-text>div>span,.walk-stop-text>p,.walk-empty-note,.walk-route-note,.walk-editor-note,.walk-source,.field,.share-photo small){font-family:'Courier New',Courier,monospace}
+.workspace .walk-journal .walk-inline-title,.workspace .walk-journal .walk-description-field textarea{font-family:var(--font-interface)}
+.workspace .walk-journal .field:not(.walk-inline-title) input:not([type=checkbox]){font-family:'Courier New',Courier,monospace}
+.workspace .walk-journal textarea::placeholder{font-family:'Courier New',Courier,monospace}
+.walk-route-editor{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 18px;font-size:11px}
+.walk-route-editor button{color:var(--blue);text-decoration:underline;text-underline-offset:4px;min-height:28px}
+.walk-route-editor span{color:#8b8b81;font-family:'Courier New',Courier,monospace}
+.walk-map-drawing-tools{position:absolute;z-index:610;bottom:30px;right:80px;display:flex;align-items:center;gap:18px;padding:14px 18px;background:#fffffcf5;color:var(--blue);font-size:12px;box-shadow:1px 3px 9px #25282015;max-width:calc(100vw - 40px)}
+.walk-map-drawing-tools span{color:#777d70;font:10px/1.5 'Courier New',Courier,monospace}
+.walk-map-drawing-tools button{min-height:30px;white-space:nowrap}
+.walk-draft-point{width:23px;height:23px;display:grid;place-items:center;border:2px solid var(--blue);border-radius:50%;background:#fff;color:var(--blue);font:10px 'Courier New',Courier,monospace}
+.walk-stop-entry>.photo-edit{margin:20px 0;border-bottom:1px solid #d9ded2;padding-bottom:20px}
+.walk-stop-entry .photo-edit-image{max-height:200px}
+.walk-stop-entry .photo-edit .detail-body{padding:16px 0}
+.walk-journal>.upload-panel{position:static;inset:auto;margin:22px 0;width:100%;max-width:none;max-height:none;padding:0;border:0;box-shadow:none;background:none}
+.walk-journal>.upload-panel .panel-top h2{font-size:21px}
+@media(max-width:720px){.workspace.route-drawing>.sidebar,.workspace.route-drawing>.walk-panel-tapes{visibility:hidden;pointer-events:none}.walk-map-drawing-tools{left:16px;right:16px;bottom:25px;gap:12px;flex-wrap:wrap}.walk-map-drawing-tools span{flex-basis:100%}.walk-map-drawing-tools button:last-child{margin-left:auto}}
+
+.workspace .walk-journal .walk-add-moment{width:auto;max-width:100%;display:flex;align-items:center;justify-content:flex-start;gap:9px;min-height:44px;padding:0;margin:20px 0;border:0;background:none;box-shadow:none;color:var(--blue);font-size:21px;line-height:1.2;letter-spacing:-.6px;font-weight:600;text-align:left}
+.workspace .walk-journal .walk-add-moment:hover{background:none;text-decoration:underline;text-underline-offset:5px}
+.workspace .walk-journal .walk-add-moment>svg{width:32px;height:32px;flex-shrink:0;margin:0}
+@media(max-width:720px){.workspace .walk-journal .walk-add-moment{font-size:18px;letter-spacing:-.4px}.workspace .walk-journal .walk-add-moment>svg{width:30px;height:30px}}
+
+.workspace .walk-journal .walk-stats{border:0}
+.workspace .walk-journal .walk-stats>div{border:0}
+.workspace .walk-journal .walk-stats strong{color:var(--blue);font-size:32px;font-weight:650;line-height:1;letter-spacing:-1.1px}
+.upload-panel>.panel-top{justify-content:flex-end}
+/* Open, paper-like upload fields in the walk panel. */
+.workspace .walk-journal .walk-stats strong{font-weight:400}
+.workspace .walk-journal .walk-stats span{font-size:8px;line-height:1.7;letter-spacing:0}
+.workspace .walk-journal .upload-panel .field input,.workspace .walk-journal .upload-panel .field select,.workspace .walk-journal .upload-panel .field textarea{background:transparent;border:0;border-radius:0;box-shadow:none;padding:8px 0;color:#373b31;font-size:13px;line-height:1.5}
+.workspace .walk-journal .upload-panel .field textarea{resize:vertical;min-height:65px}
+.workspace .walk-journal .upload-panel .capture-conditions{border:0;margin:20px 0;padding:0}
+.workspace .walk-journal .upload-panel .upload-tag-options{margin:22px 0 18px;border:0;padding:0}
+.workspace .walk-journal .upload-panel .upload-tag-options>summary{font-family:'Courier New',Courier,monospace;font-size:9px;font-weight:400;line-height:1.6;color:#77776a;padding:4px 0}
+.workspace .walk-journal .upload-panel .photo-tag-fields legend{font-family:'Courier New',Courier,monospace;font-size:10px;color:#8b8b81}
+.workspace .walk-journal .upload-panel .dropzone{background:transparent;border:0}
+
+.workspace .walk-journal .photo-edit .field input,.workspace .walk-journal .photo-edit .field select,.workspace .walk-journal .photo-edit .field textarea{border:0;background:transparent;box-shadow:none;padding-left:0;padding-right:0}
+
+.workspace .walk-detail .walk-detail-number,.workspace .walk-editor-inline .walk-inline-title>.walk-detail-number{font:400 10px/1.7 'Courier New',Courier,monospace;letter-spacing:0;color:#8b8b81}
+.workspace .walk-detail .walk-title-row h2{flex-direction:column;align-items:flex-start;gap:6px}
+.workspace .walk-editor-inline .walk-inline-title{flex-direction:column;align-items:flex-start;gap:6px}
+.workspace .walk-detail .walk-title-row>.owner-actions{margin-top:25px}
+
+.dropzone.has-preview>.change-file-camera{display:grid;place-items:center;width:28px;height:28px;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;color:var(--blue)}
+
+.workspace .walk-list .walk-row>.walk-stop-index{font:400 10px/1.7 'Courier New',Courier,monospace;color:#8b8b81;letter-spacing:0;width:28px;min-width:28px;padding-top:5px}
+
+@media(max-width:720px){.workspace .walk-journal .upload-panel .upload-tag-options>summary{font-size:11px}}
+/* The map atlas is another sheet on the same wall. */
+.workspace.atlas-paper-workspace>.sidebar{background:#fffffcf5;box-shadow:1px 3px 9px #25282015}
+.atlas-paper-workspace .section-close{width:32px;justify-content:center;padding:0}
+.atlas-paper-workspace .intro{padding:30px 24px 0}
+.atlas-paper-workspace .intro h1{font-size:30px;line-height:1.15;font-weight:400;letter-spacing:-.7px;margin:0 0 22px}
+.atlas-paper-workspace .atlas-gallery-link{margin:0 0 22px;padding:0;border:0;font-size:14px;font-weight:400}
+.atlas-paper-workspace .search{border:0;background:none;margin:0;padding:8px 0;gap:9px}
+.atlas-paper-workspace .search input{border:0;background:none;font-family:'Courier New',Courier,monospace;font-size:10px}
+.atlas-paper-workspace .search svg{width:15px;height:15px}
+.atlas-paper-workspace .filters{border:0;margin:14px 0 18px;gap:22px}
+.atlas-paper-workspace .filters button{border:0;padding:6px 0;font-size:12px}
+.atlas-paper-workspace .filters button.active{text-decoration:underline;text-underline-offset:5px}
+.atlas-paper-workspace .collection{padding:0 24px 25px}
+.atlas-paper-workspace .section-label{border:0;padding:0;margin:0 0 18px;font:9px/1.7 'Courier New',Courier,monospace;color:#8b8b81;letter-spacing:0}
+.atlas-paper-workspace .photo-card-wrap,.atlas-paper-workspace .photo-card{border:0;box-shadow:none;background:none}
+.atlas-paper-workspace .photo-frame{border:0;box-shadow:none}
+.atlas-paper-workspace .card-text{padding:14px 0 0}
+.atlas-paper-workspace .card-text h2{font-size:21px;font-weight:400;line-height:1.25;letter-spacing:-.4px;margin:6px 0 8px}
+.atlas-paper-workspace .atlas-entry-number,.atlas-paper-workspace .card-text p,.atlas-paper-workspace .atlas-meta{font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81;letter-spacing:0}
+.atlas-paper-workspace .card-text p{margin:0 0 5px}
+.atlas-paper-workspace .photo-card-controls{gap:8px;margin:8px 0 25px}
+.atlas-paper-workspace .photo-card-controls button{width:30px;min-height:30px;justify-content:center;padding:0}
+.atlas-paper-workspace .add-card{display:flex;justify-content:flex-start;align-items:center;gap:9px;border:0;padding:0;margin:22px 0 0;min-height:44px;color:var(--blue);font-size:21px;font-weight:600;letter-spacing:-.6px;text-transform:none}
+.atlas-paper-workspace .add-card>svg{width:32px;height:32px;flex-shrink:0;margin:0}
+.atlas-paper-workspace .add-card>span{width:auto;height:auto;border:0;display:inline;color:inherit}
+.atlas-paper-workspace .sidebar-footer{border:0;padding:8px 24px 24px;font:8px/1.8 'Courier New',Courier,monospace;color:#8b8b81;gap:8px;flex-wrap:wrap}
+@media(max-width:720px){.atlas-paper-workspace .intro h1{font-size:28px}.atlas-paper-workspace .card-text h2{font-size:20px}.atlas-paper-workspace .add-card{font-size:18px}.atlas-paper-workspace .add-card>svg{width:30px;height:30px}}
+.atlas-paper-workspace .photo-card-wrap>.detail-panel{position:relative;inset:auto;width:100%;max-width:none;max-height:none;overflow:visible;border:0;box-shadow:none;background:none}
+.atlas-paper-workspace .detail-panel .detail-close{z-index:1;top:6px;right:6px;background:#fffffce8}
+.atlas-paper-workspace .detail-panel .detail-body{padding:16px 0}
+.atlas-paper-workspace .detail-panel .detail-body h2{font-size:23px;line-height:1.25;font-weight:400;margin:0 0 12px}
+.atlas-paper-workspace .detail-panel :is(.field,.detail-place,.photo-author,.detail-bottom,.conditions-note,.conditions-time){font-family:'Courier New',Courier,monospace;color:#8b8b81}
+.atlas-paper-workspace .detail-panel :is(.photo-tag-editor,.photo-conditions){border:0}
+.atlas-paper-workspace .detail-panel .field :is(input,select,textarea){border:0;background:transparent;box-shadow:none;padding-left:0;padding-right:0}
+.workspace.account-paper-workspace>.sidebar{background:#fffffcf5;box-shadow:1px 3px 9px #25282015}
+.account-paper-workspace .section-close{width:32px;justify-content:center;padding:0}
+.account-panel{padding:30px 24px 32px}
+.account-panel h1{font-size:30px;font-weight:400;line-height:1.15;letter-spacing:-.7px;margin:0 0 28px}
+.account-panel nav{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.account-panel nav a{display:inline-flex;align-items:center;min-height:30px;color:var(--blue);font-size:16px;font-weight:400}
+.account-panel nav a:hover{text-decoration:underline;text-underline-offset:4px}
+@media(max-width:720px){.account-panel h1{font-size:28px}}
+
+.gallery-workspace>.sidebar>.section-close{width:32px;justify-content:center;padding:0}

@@ -6,10 +6,12 @@ import {readFile} from 'node:fs/promises';
 import ts from '../node_modules/typescript/lib/typescript.js';
 const dataModule=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
 const server=dataModule(`export const createClient=async()=>globalThis.walkApiFixture.db; export const getSessionUser=async()=>globalThis.walkApiFixture.user; export const isCrossOrigin=r=>!!r.headers.get('origin')&&r.headers.get('origin')!==new URL(r.url).origin;`);
+const routeSource=ts.transpileModule(await readFile(new URL('../lib/walk-route.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const routeModule=dataModule(routeSource.replaceAll('./walks',new URL('../lib/walks.ts',import.meta.url).href));
 async function handler(path){
  const source=await readFile(new URL(path,import.meta.url),'utf8');
  const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
- return import(dataModule(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/walks',new URL('../lib/walks.ts',import.meta.url).href).replaceAll('@/lib/walk-details',new URL('../lib/walk-details.ts',import.meta.url).href)));
+ return import(dataModule(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/walks',new URL('../lib/walks.ts',import.meta.url).href).replaceAll('@/lib/walk-route',routeModule).replaceAll('@/lib/walk-details',new URL('../lib/walk-details.ts',import.meta.url).href)));
 }
 const {POST}=await handler('../app/api/walks/route.ts');
 const {PATCH}=await handler('../app/api/walks/[id]/route.ts');
@@ -68,4 +70,36 @@ test('ownership and active-walk guards run before any mutation',async()=>{
 test('a title-only edit keeps exact recorded timestamps, totals and geometry',async()=>{
  const f=fixture(),before=structuredClone(f.rows[1]);assert.equal((await edit({title:'New name',shared:true,withPath:true})).status,200);
  assert.deepEqual(f.rows[1],{...before,title:'New name',shared:true});
+});
+
+test('walk descriptions save, clear and preserve all route data; invalid descriptions never write',async()=>{
+ const f=fixture(),before=structuredClone(f.rows[1]);
+ let response=await edit({description:'  From the station to the river.\nEvening light.  ',withPath:true});
+ assert.equal(response.status,200);assert.equal((await response.json()).walk.description,'From the station to the river.\nEvening light.');
+ assert.deepEqual(f.rows[1],{...before,description:'From the station to the river.\nEvening light.'});
+ response=await edit({description:''});assert.equal(response.status,200);assert.equal((await response.json()).walk.description,'');
+ for(const description of ['x'.repeat(2001),null,22]){
+  const isolated=fixture();assert.equal((await edit({description})).status,400);
+  assert.equal((await POST(request({kind:'past',title:'Walk',details,description}))).status,400);assert.equal(isolated.writes.length,0);
+ }
+});
+test('past walks accept descriptions and another owner cannot rewrite them',async()=>{
+ const f=fixture();const response=await POST(request({kind:'past',title:'River walk',details,description:'Station to water'}));
+ assert.equal(response.status,201);assert.equal((await response.json()).walk.description,'Station to water');
+ f.rows[1].owner='someone-else';const count=f.writes.length;
+ assert.equal((await edit({description:'Changed'})).status,404);assert.equal(f.writes.length,count);
+});
+
+test('manual routes store many points without inventing GPS times or changing other walks',async()=>{
+ const f=fixture(),before=structuredClone(f.rows[0]);
+ const route=Array.from({length:125},(_,i)=>[8.54+i*.00001,47.37+i*.00001]);
+ const response=await POST(request({kind:'past',title:'Drawn river walk',details,route}));assert.equal(response.status,201);
+ const created=(await response.json()).walk;assert.equal(created.path.length,125);assert.deepEqual(created.path[0],[8.54,47.37,0,0]);assert.deepEqual(f.rows[0],before);
+ const edited=await edit({route,withPath:true});assert.equal(edited.status,200);assert.equal((await edited.json()).walk.path.length,125);
+});
+test('invalid or active manual routes never change stored walks',async()=>{
+ for(const route of [[[8.54,47.37]],[[Infinity,47]],[[181,47],[8,47]],Array.from({length:2001},()=>[8,47])]){
+  const f=fixture();assert.equal((await edit({route})).status,400);assert.equal((await POST(request({kind:'past',title:'Walk',details,route}))).status,400);assert.equal(f.writes.length,0);
+ }
+ const f=fixture();assert.equal((await PATCH(request({route:[[8,47],[8.1,47.1]]}),{params:Promise.resolve({id:'recording'})})).status,409);assert.equal(f.writes.length,0);
 });

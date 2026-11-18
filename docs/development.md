@@ -191,3 +191,31 @@ The introductory sequence list and “Walk together…” copy have been removed
 ## Taped Walks panel
 
 The Walks panel uses two blue tape strips over its upper edge, an icon-only close control, and a single Reflective walks heading. Start walk and Add a past walk form a compact 14px pair with 24px rows and no extra vertical gap. The saved walks follow directly without a section divider or count header; each keeps its numbered index, enlarged title, date and recorded totals. Only the pencil appears beside an owned walk. Its delete control is inside the existing editor and still opens the explicit deletion confirmation; opening/cancelling the editor does not change a walk.
+
+
+### Inline walk editing and descriptions
+
+Walk pencils now open editable fields in the existing panel, retaining its numbered title, map and photograph list. A pencil on the overview opens that walk directly in edit mode. Past-walk creation and the explicit removal confirmation are inline too; no WalkEditor or WalkActions dialog is created. Cancel discards unsaved form changes. Dates/totals retain Zürich-time and finished-walk validation.
+
+An optional plain-text description (up to 2,000 characters) sits beneath the date when viewing, with its textarea below the date fields when editing. POST/PATCH validate it before writing; omitted descriptions preserve existing values and an empty string explicitly clears only that description. Owner checks and route geometry remain unchanged. `20261118000000_walk_descriptions.sql` is prepared only: it adds a description column and length constraint without deleting walks, routes or files. Coordinate its application with Philipp separately; code upload does not apply it. Older rows render with an empty description.
+
+
+### Drawing past routes and revisiting photographs
+
+The blank walk form uses Title and Description placeholders. Mark route on map starts a local draft with up to2,000 positional points. Map clicks append points; numbered markers can be dragged, adjusted by arrow keys or removed with Delete/Backspace. Undo point removes only the last draft point. Done ends drawing; the walk's Save commits it, while Cancel discards it. The draft line is independent of the saved route. On phones the panel is temporarily hidden during drawing so the map remains usable; Done returns to the same form. Distance follows the hand-drawn segments and remains editable.
+
+POST for past walks and owner-only PATCH for ended walks accept route as longitude/latitude pairs. Invalid/single-point/oversized routes and attempts to mix a manual route with live recording are rejected before writes. Omission preserves the original track exactly; an explicitly edited route replaces it on Save only. Hand-marked points have zero capture timestamps, never fabricated GPS times. No new route schema is required.
+
+Walks mount the existing photo/video upload form inside the panel with that walk preselected, so moments can be added after saving a walk. Clicking an owned moment opens PhotoEdit inline for caption/title/category/sharing and file replacement. Shared moments retain read-only viewing. These actions use existing protected media APIs and do not require test writes to real storage. All small gray walk annotations use the same Courier New/Courier/monospace family as paper annotations; main titles and note bodies retain the interface font.
+
+
+### Shared paper presentation
+
+The map atlas now uses the same pale sheet and two blue tape strips as Walks, a plain heading and icon-only close control. Photo cards have small three-digit annotations, typewriter metadata, simpler owner icons and a matching blue add-photo action. Atlas photograph viewing/editing stays within its card in the panel; gallery navigation and own/shared filters remain available. Account actions are now available through their own Account section in the main menu; the atlas footer has been removed.
+
+Walk identifiers now use three digits and date-sized gray typewriter text, above the detail title and understated in the overview. Stats retain light-weight blue figures with smaller labels. Upload controls are borderless, Tags appears after Description in the same gray label style, and the selected-file replacement control is only a camera with a transparent background. The pin dropdown reads Pin, click on map. The upload preview omits the marked weather-unavailable and automatic-saving explanation; actual saved-weather views and available weather data remain unchanged.
+
+
+### Account navigation
+
+Account is a fourth main-menu section, using the same taped paper panel. Signed-in users can change their password or sign out; signed-out/local-only views offer Sign in. Actions use the existing /password, /auth/signout and /signin routes, including the existing redirect to sign-in after logout. No authentication rules or account records are changed. The atlas footer, coordinates and redundant branding are removed.

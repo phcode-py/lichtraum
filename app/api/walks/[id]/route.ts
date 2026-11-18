@@ -1,5 +1,6 @@
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 import { toWalk, type WalkRow } from '@/lib/walks';
+import {parseWalkRoute} from '@/lib/walk-route';
 import {parseWalkDetails} from '@/lib/walk-details';
 
 const STATUSES = ['recording', 'paused', 'ended'];
@@ -22,9 +23,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try { body = await request.json(); } catch { return Response.json({ error: 'Invalid request.' }, { status: 400 }); }
   if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'Invalid request.'},{status:400});
 
+  if(body.description!==undefined&&(typeof body.description!=='string'||body.description.trim().length>2000))return Response.json({error:'Keep the walk description under 2,000 characters.'},{status:400});
+  const manualRoute=body.route===undefined?undefined:parseWalkRoute(body.route);
+  if(manualRoute===null)return Response.json({error:'Mark a route with 2 to 2,000 valid points, or leave it empty.'},{status:400});
+  const description=typeof body.description==='string'?{description:body.description.trim()}:{};
+
   const {data:current,error:readError}=await supabase.from('walks').select('status').eq('id',id).eq('owner',user.id).maybeSingle();
   if(readError)return Response.json({error:'The walk could not be loaded.'},{status:503});
   if(!current)return Response.json({error:'Walk not found.'},{status:404});
+  if(manualRoute&&(current.status!=='ended'||body.points!==undefined||body.status!==undefined||body.duration!==undefined))return Response.json({error:'Finish the walk before editing its route.'},{status:409});
   let finishedDetails;
   if(body.details!==undefined){
     if(current.status!=='ended')return Response.json({error:'Finish this walk before editing its dates or totals.'},{status:409});
@@ -43,7 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (error) return Response.json({ error: 'Could not save the route.' }, { status: 503 });
   }
 
-  const update: Record<string, unknown> = finishedDetails?{started_at:finishedDetails.startedAt,ended_at:finishedDetails.endedAt,distance_m:finishedDetails.distance,duration_s:finishedDetails.duration}:{};
+  const update: Record<string, unknown> = {...description,...(manualRoute?{path:manualRoute.path}:{}),...(finishedDetails?{started_at:finishedDetails.startedAt,ended_at:finishedDetails.endedAt,distance_m:finishedDetails.distance,duration_s:finishedDetails.duration}:{})};
   if (typeof body.status === 'string' && STATUSES.includes(body.status)) {
     update.status = body.status;
     if (body.status === 'ended' && current.status !== 'ended') update.ended_at = new Date().toISOString();
@@ -55,9 +62,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   let row: WalkRow | null = null;
   if (Object.keys(update).length) {
     let query=supabase.from('walks').update(update).eq('id',id).eq('owner',user.id);
-    if(finishedDetails)query=query.eq('status','ended');
+    if(finishedDetails||manualRoute)query=query.eq('status','ended');
     const {data,error}=await query.select('*').maybeSingle();
-    if (error) return Response.json({ error: 'Could not update the walk.' }, { status: 503 });
+    if (error) return Response.json({ error: Object.keys(description).length?'Could not save the walk description. The description database setup may still be needed.':'Could not update the walk.' }, { status: 503 });
     if (!data) return new Response('Not found', { status: 404 });
     row = data as WalkRow;
   } else {

@@ -6,6 +6,7 @@ const sections=[
  {id:'walks',label:'Walks'},
  {id:'explore',label:'Light atlas'},
  {id:'correspondence',label:'Working notes'},
+ {id:'account',label:'Account'},
 ];
 
 export default function SiteNavigation({active,onOpen,onNavigate}:{active:string;onOpen:()=>void;onNavigate:(section:string)=>void}){
