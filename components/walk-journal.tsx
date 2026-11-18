@@ -1,5 +1,5 @@
 'use client';
-import {ArrowLeft,ArrowUpRight,Plus} from 'lucide-react';
+import {ArrowLeft,ArrowUpRight,Play,Plus} from 'lucide-react';
 import {type ReactNode,useState} from 'react';
 import type {WalkRouteDraft} from '@/lib/walk-route';
 import PhotoEdit from './photo-edit';
@@ -14,7 +14,7 @@ const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',mont
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
-export default function WalkJournal({routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
+export default function WalkJournal({filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
  const [editingMoment,setEditingMoment]=useState<string|null>(null);
  const [addingPast,setAddingPast]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
@@ -27,24 +27,23 @@ export default function WalkJournal({routeDraft,onRouteChange,momentForm,onImpre
    <button className="walk-back" aria-label="Back to all walks" title="Back to all walks" onClick={()=>{setEditing(null);onSelect(null)}}><ArrowLeft size={17}/></button>
    {editing===walk.id?<WalkEditor routeDraft={routeDraft} onRouteChange={onRouteChange} key={walk.id} walk={walk} number={String(n).padStart(3,'0')} onSaved={onSaved} onRemoved={onRemoved} onClose={()=>setEditing(null)}/>:<>
    <div className="walk-title-row"><h2><span className="walk-detail-number">{String(n).padStart(3,'0')}</span><span>{walk.title||'Untitled walk'}</span></h2><WalkActions walk={walk} onEdit={()=>setEditing(walk.id)}/></div>
-   <div className="walk-detail-dates"><time dateTime={new Date(walk.startedAt).toISOString()}>{day(walk.startedAt)}</time><span> · {time(walk.startedAt)}{walk.endedAt?`-${day(walk.startedAt)===day(walk.endedAt)?'':day(walk.endedAt)+' · '}${time(walk.endedAt)}`:''}</span></div>
+   <div className="walk-detail-dates"><time dateTime={new Date(walk.startedAt).toISOString()}>{day(walk.startedAt)}</time><span className="walk-detail-time"> {time(walk.startedAt)}{walk.endedAt?`-${day(walk.startedAt)===day(walk.endedAt)?'':day(walk.endedAt)+' · '}${time(walk.endedAt)}`:''}</span></div>
    {walk.description&&<p className="walk-description">{walk.description}</p>}
    <div className="walk-stats"><div><strong>{(walk.distance/1000).toFixed(1)}</strong><span>KM / ROUTE</span></div><div><strong>{Math.round(walk.duration/60)}</strong><span>MIN / WALKING</span></div><div><strong>{String(pins.length).padStart(2,'0')}</strong><span>IMPRESSIONS</span></div></div>
    {walk.mine&&walk.status!=='ended'&&<button className="primary walk-continue" onClick={()=>onContinue(walk)}>Continue this walk <ArrowUpRight size={14}/></button>}
    {!walk.path.length&&walk.status==='ended'&&<p className="walk-route-note">No GPS route recorded. The moments still belong here.</p>}
-   {walk.mine&&<button className="walk-add-moment" onClick={()=>onAddMoment(walk)}><Plus size={32} strokeWidth={3} aria-hidden="true"/><span>add a photo or video</span></button>}
+   <div className="walk-moment-actions">{walk.mine&&<button className="walk-add-moment" onClick={()=>onAddMoment(walk)}><Plus size={14} strokeWidth={3} aria-hidden="true"/><span>Add a photo or video</span></button>}
+   {!!pins.length&&<button className="walk-filmstrip-toggle" aria-expanded={filmstripOpen} onClick={onFilmstrip}><Play size={14} fill="currentColor" aria-hidden="true"/><span>Filmstrip</span></button>}</div>
    </>}
    {momentForm}
    <section className="walk-stops">
     {!pins.length&&<p className="walk-empty-note">No impressions on this walk.</p>}
-    {pins.map((p,i)=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&p.mine!==false?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<button className="walk-stop" aria-expanded={editingMoment===p.id} onClick={()=>setEditingMoment(editingMoment===p.id?null:p.id)}>
-     <span className="walk-stop-index">{String(i+1).padStart(2,'0')}</span>
+    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&p.mine!==false?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<button className="walk-stop" aria-expanded={editingMoment===p.id} onClick={()=>setEditingMoment(editingMoment===p.id?null:p.id)}>
      <div className="walk-stop-text">
       <div><strong>{p.title}</strong><span>{time(p.createdAt)}</span></div>
       <p>{p.place}</p>
       <div className="walk-stop-image"><AtlasMedia url={p.url} title={p.title} mediaType={p.mediaType}/></div>
      </div>
-     <ArrowUpRight size={12}/>
     </button>}{editingMoment===p.id&&p.mine===false&&p.caption&&<p className="walk-description">{p.caption}</p>}</div>)}
    </section>
   </div>;

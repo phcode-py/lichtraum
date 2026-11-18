@@ -211,7 +211,7 @@ Walks mount the existing photo/video upload form inside the panel with that walk
 
 ### Shared paper presentation
 
-The map atlas now uses the same pale sheet and two blue tape strips as Walks, a plain heading and icon-only close control. Photo cards have small three-digit annotations, typewriter metadata, simpler owner icons and a matching blue add-photo action. Atlas photograph viewing/editing stays within its card in the panel; gallery navigation and own/shared filters remain available. Account actions are now available through their own Account section in the main menu; the atlas footer has been removed.
+The map atlas now uses the same pale sheet and two blue tape strips as Walks, a plain heading and icon-only close control. Photo cards have typewriter metadata, simpler owner icons and no photograph numbering. The compact add-photo action sits beneath the atlas heading. Atlas photograph viewing/editing stays within its card in the panel; gallery navigation and own/shared filters remain available. Account actions are now available through their own Account section in the main menu; the atlas footer has been removed.
 
 Walk identifiers now use three digits and date-sized gray typewriter text, above the detail title and understated in the overview. Stats retain light-weight blue figures with smaller labels. Upload controls are borderless, Tags appears after Description in the same gray label style, and the selected-file replacement control is only a camera with a transparent background. The pin dropdown reads Pin, click on map. The upload preview omits the marked weather-unavailable and automatic-saving explanation; actual saved-weather views and available weather data remain unchanged.
 
@@ -219,3 +219,24 @@ Walk identifiers now use three digits and date-sized gray typewriter text, above
 ### Account navigation
 
 Account is a fourth main-menu section, using the same taped paper panel. Signed-in users can change their password or sign out; signed-out/local-only views offer Sign in. Actions use the existing /password, /auth/signout and /signin routes, including the existing redirect to sign-in after logout. No authentication rules or account records are changed. The atlas footer, coordinates and redundant branding are removed.
+
+
+## Walk filmstrips
+
+A walk with photographs has a Filmstrip toggle. The contact strip stays on the map, scrolls horizontally, and has previous/next controls. Selecting a frame highlights its existing map marker and centres the map on that photograph without opening a new details window. On phones the walk panel is temporarily hidden while the strip is open; closing it restores the same walk. Drawing a route closes the strip to avoid overlapping controls.
+
+`sequenceWalkPhotos` projects each photograph onto the closest segment of the saved route and orders by distance along it; segments separated by a recording pause do not add an invented connecting distance. Photos at the same position use known capture time, or upload time when capture time is absent. Walks without usable route geometry use that time order. Off-route photographs use their nearest route position, not a claim of precise GPS capture progress. Existing rows, media files and routes are never rewritten for sequencing.
+
+## Blue tracing layers
+
+Photographs in the atlas, gallery and walk photo editor have a small pen control. Drawing uses normalized points over the actual image bounds, so strokes follow the photograph on resize. Undo removes the last draft line; Cancel restores the saved layer. The layers control fades the photograph to tracing-paper opacity, the eye hides/shows drawings, and Download exports a transparent SVG containing the vector strokes only. Original image pixels and files are never modified. Video controls remain unchanged and do not offer tracing.
+
+Each participant has a separate layer per photograph **and storage image key**. Everyone who can access a shared photograph can see its current layers and draw a personal layer; private-photo access stays governed by existing photo RLS. A photo replacement does not reuse or delete layers associated with the previous image. Saving requires the image source and expected revision to match; conflicting edits or a changed photograph retain the client's draft and refuse an overwrite. PhotoEdit saves a pending tracing before saving its other edits. These are separate requests: if the tracing saves but metadata later fails, the tracing remains saved and the metadata form stays open.
+
+The tracing API accepts bounded geometry only (200 strokes, 2,500 points per stroke, 20,000 total points; normalized coordinates in0–1), not user-supplied SVG/HTML. The API fills authorship from the verified session and never accepts another owner's identity. The SQL repeats geometry checks, enables RLS and grants no DELETE permission.
+
+`20261118010000_photo_tracings.sql` is **prepared only**. It creates new companion storage and policies; applying it must be coordinated with Philipp separately. No migration, live database writes or file replacements were performed during development. Without storage setup, drawing and transparent SVG download remain usable and the interface explains why online saving is unavailable. Local preview adapters keep tracing state separate from existing preview photos/papers.
+
+Validation:75tests pass, including route-order independence from upload order, pause handling, geometry validation, private access, cross-origin/auth rejection, per-author isolation, source/revision conflicts and missing storage. TypeScript and the production webpack build pass. Browser checks covered opening/closing the filmstrip, drawing two lines, undo, cancel, hide/show,18% tracing-paper opacity, gallery scroll behaviour during drawing and a real SVG download with two paths/no embedded photograph. QA drawings were cancelled; no saved photo, walk, note or stored tracing was changed.
+
+The final walk media actions are two compact24px rows: a leading plus for Add a photo or video and a filled play triangle for Filmstrip. Photograph ordinals and corner arrows are omitted from walk cards and filmstrip frames; the atlas also omits photo ordinals and its Light & reflections collection label. The atlas gallery action has a leading icon, matching Add a photograph. Date and time are separated by whitespace rather than a dot.

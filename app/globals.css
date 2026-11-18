@@ -875,3 +875,47 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 @media(max-width:720px){.account-panel h1{font-size:28px}}
 
 .gallery-workspace>.sidebar>.section-close{width:32px;justify-content:center;padding:0}
+
+.atlas-paper-workspace .atlas-entry-options{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:0 0 22px}
+.atlas-paper-workspace .atlas-entry-options>button{display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:24px;margin:0;padding:0;border:0;background:none;color:var(--blue);font-size:14px;line-height:20px;font-weight:400;letter-spacing:0}
+.atlas-paper-workspace .atlas-entry-options>button>svg{width:14px;height:14px;flex-shrink:0}
+.atlas-paper-workspace .atlas-entry-options>button:hover{text-decoration:underline;text-underline-offset:4px}
+/* A contact strip follows the route without opening another window. */
+.walk-filmstrip-toggle{display:flex;align-items:center;gap:8px;color:var(--blue);font-size:14px;min-height:30px;margin:0 0 18px}
+.walk-filmstrip{position:absolute;z-index:610;left:470px;right:80px;bottom:24px;background:#fffffcf2;padding:14px 16px;box-shadow:1px 3px 9px #25282015;max-width:calc(100vw - 32px)}
+.walk-filmstrip header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.walk-filmstrip header>span{font:10px/1.5 'Courier New',Courier,monospace;color:#8b8b81}
+.walk-filmstrip header>div{display:flex;gap:5px}.walk-filmstrip header button{display:grid;place-items:center;width:28px;height:28px;color:var(--blue)}
+.filmstrip-frames{display:flex;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:3px 2px 8px;scrollbar-width:thin}
+.filmstrip-frame{display:block;flex:0 0 165px;scroll-snap-align:start;text-align:left;opacity:.65;transition:opacity .2s;color:#373b31}
+.filmstrip-frame[aria-current=true],.filmstrip-frame:hover{opacity:1}.filmstrip-frame[aria-current=true]{outline:1px solid var(--blue);outline-offset:2px}
+.filmstrip-frame>img,.filmstrip-frame>.atlas-video{display:block;width:165px;height:110px;object-fit:cover}.filmstrip-frame .atlas-video video{width:100%;height:100%;object-fit:cover}
+.filmstrip-frame>span{display:block;font:9px/1.6 'Courier New',Courier,monospace;margin-top:7px;color:#8b8b81}.filmstrip-frame b{font-weight:400;color:var(--blue);margin-right:7px}.filmstrip-frame small{display:block;font:inherit}
+@media(max-width:1000px){.walk-filmstrip{left:455px;right:70px}.filmstrip-frame{flex-basis:145px}.filmstrip-frame>img,.filmstrip-frame>.atlas-video{width:145px;height:100px}}
+@media(max-width:720px){.walk-filmstrip{left:16px;right:16px;bottom:24px;max-width:none}.workspace.filmstrip-open>.sidebar,.workspace.filmstrip-open>.walk-panel-tapes{visibility:hidden;pointer-events:none}.filmstrip-frame{flex-basis:160px}.filmstrip-frame>img,.filmstrip-frame>.atlas-video{width:160px;height:108px}}
+/* Tracings stay separate from the photograph; normalized points track its aspect ratio. */
+.photo-tracing{position:relative;display:block;width:100%;background:transparent;isolation:isolate}
+.tracing-surface{position:relative;display:block;width:100%;background:#fffffc;overflow:hidden}
+.photo-tracing .tracing-surface>img{display:block!important;width:100%!important;height:100%!important;position:absolute;inset:0;object-fit:contain!important;opacity:1;transition:opacity .2s}
+.photo-tracing.tracing-paper .tracing-surface>img{opacity:.18}
+.tracing-surface>svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.photo-tracing.is-drawing .tracing-surface>svg{pointer-events:auto;touch-action:none}
+.tracing-toolbar{position:absolute;z-index:3;top:7px;left:7px;display:flex;gap:2px;background:#fffffce8;padding:3px}
+.tracing-toolbar button{width:27px;height:27px;display:grid;place-items:center;color:var(--blue);background:none;border:0}
+.tracing-toolbar button[aria-pressed=true]{color:var(--blue)}.tracing-toolbar button[aria-pressed=false]{color:#8b8b81}
+.photo-tracing .tracing-status{position:absolute;z-index:3;bottom:0;left:0;right:0;padding:7px 9px;margin:0;background:#fffffcf2;font:10px/1.5 'Courier New',Courier,monospace;color:#77776a}
+.photo-edit-image:has(.photo-tracing){border:0;max-height:none;cursor:none}
+.photo-edit-image .photo-edit-replace{position:absolute;right:8px;bottom:8px;width:28px;height:28px;display:grid;place-items:center;color:var(--blue);z-index:4}
+.photo-edit-image .photo-edit-replace input{position:absolute;inset:0;width:100%;height:100%;opacity:0}
+.photo-edit-image .photo-edit-replace:focus-within{outline:1px solid var(--blue)}
+.gallery-lightbox-figure>.photo-tracing{height:100%}.gallery-lightbox-figure>.photo-tracing .tracing-surface{height:100%;aspect-ratio:auto!important}
+.walk-stop-entry .photo-edit-image:has(.photo-tracing){max-height:none}
+
+.workspace .walk-journal .walk-add-moment{font-size:14px;font-weight:400;line-height:20px;letter-spacing:0;gap:8px;min-height:24px}
+.workspace .walk-journal .walk-add-moment>svg{width:14px;height:14px}
+
+.walk-moment-actions{display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:20px 0 27px}
+.workspace .walk-journal .walk-moment-actions>button{display:flex;align-items:center;gap:8px;min-height:24px;margin:0;padding:0;font-size:14px;line-height:20px;font-weight:400;letter-spacing:0;color:var(--blue)}
+.walk-moment-actions>button>svg{width:14px;height:14px;flex-shrink:0}
+
+.walk-detail-time{margin-left:4px}
