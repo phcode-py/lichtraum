@@ -919,3 +919,24 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 .walk-moment-actions>button>svg{width:14px;height:14px;flex-shrink:0}
 
 .walk-detail-time{margin-left:4px}
+
+/* Account rests at the centre of the same faded map wall as Working notes. */
+.workspace.account-paper-workspace>.sidebar{left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(370px,calc(100vw - 48px));max-width:none;max-height:none;padding:0;background:transparent;backdrop-filter:none;box-shadow:none;overflow:visible}
+.account-paper-workspace .account-panel{position:relative;width:100%;max-height:calc(100dvh - 100px);overflow:auto;padding:38px 30px;background:#fffffc;box-shadow:1px 3px 9px #25282015}
+
+.workspace.account-paper-workspace.section-open>.map-panel{filter:blur(10px);opacity:.38;pointer-events:none;transform:scale(1.06)}
+.account-paper-workspace.section-open>.map-panel .map-heading{visibility:hidden}
+main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{display:none}
+
+.account-tapes{position:absolute;inset:0;z-index:1;pointer-events:none}
+.account-tapes>span{position:absolute;display:block;width:17px;height:49px;top:-18px;background:var(--blue);opacity:.94;clip-path:polygon(1% 2%,100% 0,98% 98%,0 100%)}
+.account-tapes>span:first-child{left:43px;transform:rotate(-6deg)}
+.account-tapes>span:nth-child(2){right:48px;height:46px;transform:rotate(5deg)}
+.account-tapes>span:last-child{left:-4px;top:auto;bottom:5px;transform:rotate(90deg)}
+.account-details{margin:0 0 24px;display:flex;flex-direction:column;gap:17px}
+.account-details>div{min-width:0}
+.account-details dt{font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81;margin-bottom:4px}
+.account-details dd{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.account-details dd a{color:var(--blue);font-size:12px;margin-left:auto}
+.account-details dd a:hover{text-decoration:underline;text-underline-offset:4px}
+.account-status{font:10px/1.6 'Courier New',Courier,monospace;color:#8b8b81;margin:0 0 16px}
