@@ -969,7 +969,6 @@ main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{displa
 @media(prefers-reduced-motion:reduce){.atlas-picture-info{transition:none}}
 
 .sun-weather{margin-top:20px}
-.sun-weather h3{font-size:13px;font-weight:400;color:var(--blue);margin:0 0 12px}
 .sun-weather .weather-grid{margin:0;gap:14px 10px}
 .sun-weather .weather-grid dt,.sun-weather .conditions-note{font:9px/1.6 'Courier New',Courier,monospace;color:#8b8b81}
 .sun-weather .weather-grid dt{margin-bottom:4px}
