@@ -983,3 +983,11 @@ main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{displa
 .atlas-picture-copy .atlas-picture-description{margin:9px 0}
 .atlas-picture-actions>a{color:#8b8b81}
 .gallery-card-caption :is(h2,p,time,span,.gallery-light-label,.gallery-card-author,.gallery-card-tags>span){font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81;letter-spacing:0}
+
+/* The atlas and walks use the same in-place moment editor. */
+.workspace .walk-stop-entry .photo-edit .field{font-family:'Courier New',Courier,monospace}
+.workspace .walk-stop-entry .photo-edit .field :is(input,select,textarea){border:0;background:transparent;box-shadow:none;padding-left:0;padding-right:0}
+.workspace .walk-stop-entry .photo-edit .field input:not([type=checkbox]){font-family:'Courier New',Courier,monospace}
+
+.workspace .photo-edit .photo-edit-actions>button{font-family:var(--font-interface);font-size:12px;font-weight:400;line-height:1.5;letter-spacing:0;color:var(--blue);min-height:36px;padding:0;background:none;border:0}
+.workspace .photo-edit .photo-edit-actions>button>svg{width:14px;height:14px}

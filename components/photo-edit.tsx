@@ -36,7 +36,6 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel}:{
    <input type="file" aria-label="Change photo or video" accept={MEDIA_ACCEPT} disabled={busy} onChange={e=>choose(e.target.files?.[0])}/>
   </label></div>
   <div className="detail-body">
-   <div className="eyebrow">EDIT MOMENT</div>
    <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)} disabled={busy}/></label>
    <label className="field">What caught your eye?<select value={category} onChange={e=>setCategory(e.target.value)} disabled={busy}><option>Reflection</option><option>Light</option><option>Shadow</option><option>Other</option></select></label>
    <label className="field">Description <span>(optional)</span><textarea maxLength={600} rows={3} value={caption} onChange={e=>setCaption(e.target.value)} disabled={busy} placeholder="A few words about this moment."/></label>
