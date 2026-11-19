@@ -1,5 +1,6 @@
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 import { toWalk, type WalkRow } from '@/lib/walks';
+import {isWalkParticipant} from '@/lib/walk-participants';
 import {parseWalkRoute} from '@/lib/walk-route';
 import {parseWalkDetails} from '@/lib/walk-details';
 
@@ -30,7 +31,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const {data:current,error:readError}=await supabase.from('walks').select('status').eq('id',id).eq('owner',user.id).maybeSingle();
   if(readError)return Response.json({error:'The walk could not be loaded.'},{status:503});
-  if(!current)return Response.json({error:'Walk not found.'},{status:404});
+  if(!current){
+    if(!await isWalkParticipant(supabase,id))return Response.json({error:'Walk not found.'},{status:404});
+    if(Object.keys(body).some(key=>!['title','description','details','withPath'].includes(key)))return Response.json({error:'Only the creator can change sharing, recording or the route.'},{status:403});
+    if(body.title!==undefined&&(typeof body.title!=='string'||!body.title.trim()||body.title.trim().length>100))return Response.json({error:'Give the walk a name of up to 100 characters.'},{status:400});
+    const parsed=body.details===undefined?null:parseWalkDetails(body.details);
+    if(parsed&&!parsed.details)return Response.json({error:parsed.error},{status:400});
+    const d=parsed?.details;
+    const {data,error}=await supabase.rpc('edit_joined_walk',{walk_id:id,walk_title:typeof body.title==='string'?body.title.trim():null,walk_description:typeof body.description==='string'?body.description.trim():null,walk_started:d?.startedAt??null,walk_ended:d?.endedAt??null,walk_distance:d?.distance??null,walk_duration:d?.duration??null}).maybeSingle();
+    if(error)return Response.json({error:error.code==='42501'?'You can no longer edit this walk.':'The walk could not be updated. The participant setup may still be needed.'},{status:error.code==='42501'?403:503});
+    if(!data)return Response.json({error:'Walk not found.'},{status:404});
+    const walk={...toWalk(data as WalkRow,user.id),canEdit:true,participating:true};return Response.json({walk:body.withPath?walk:{...walk,path:[]}});
+  }
   if(manualRoute&&(current.status!=='ended'||body.points!==undefined||body.status!==undefined||body.duration!==undefined))return Response.json({error:'Finish the walk before editing its route.'},{status:409});
   let finishedDetails;
   if(body.details!==undefined){

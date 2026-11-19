@@ -11,7 +11,7 @@ const routeModule=dataModule(routeSource.replaceAll('./walks',new URL('../lib/wa
 async function handler(path){
  const source=await readFile(new URL(path,import.meta.url),'utf8');
  const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
- return import(dataModule(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/walks',new URL('../lib/walks.ts',import.meta.url).href).replaceAll('@/lib/walk-route',routeModule).replaceAll('@/lib/walk-details',new URL('../lib/walk-details.ts',import.meta.url).href)));
+ return import(dataModule(js.replaceAll('@/lib/supabase/server',server).replaceAll('@/lib/walk-participants',new URL('../lib/walk-participants.ts',import.meta.url).href).replaceAll('@/lib/walks',new URL('../lib/walks.ts',import.meta.url).href).replaceAll('@/lib/walk-route',routeModule).replaceAll('@/lib/walk-details',new URL('../lib/walk-details.ts',import.meta.url).href)));
 }
 const {POST}=await handler('../app/api/walks/route.ts');
 const {PATCH}=await handler('../app/api/walks/[id]/route.ts');

@@ -1,5 +1,6 @@
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
 import { toWalk, type WalkRow } from '@/lib/walks';
+import {withWalkParticipants} from '@/lib/walk-participants';
 import {parseWalkRoute} from '@/lib/walk-route';
 import {parseWalkDetails} from '@/lib/walk-details';
 
@@ -10,7 +11,7 @@ export async function GET() {
   // Row-level security: your own walks plus shared ones.
   const { data, error } = await supabase.from('walks').select('*').order('started_at', { ascending: false }).limit(200);
   if (error) return Response.json({ error: 'Walks could not be loaded. Please try again.' }, { status: 503 });
-  return Response.json({ walks: (data as WalkRow[]).map(w => toWalk(w, user.id)) }, { headers: { 'Cache-Control': 'no-store' } });
+  return Response.json({ walks: await withWalkParticipants(supabase,(data as WalkRow[]).map(w => toWalk(w, user.id)),user.id) }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 export async function POST(request: Request) {

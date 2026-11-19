@@ -1,4 +1,5 @@
 'use client';
+import WalkPeople from './walk-people';
 import {ArrowLeft,ArrowUpRight,Play,Plus,Layers,Eye} from 'lucide-react';
 import {type ReactNode,useState} from 'react';
 import type {WalkRouteDraft} from '@/lib/walk-route';
@@ -29,11 +30,12 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
    {editing===walk.id?<WalkEditor routeDraft={routeDraft} onRouteChange={onRouteChange} key={walk.id} walk={walk} number={String(n).padStart(3,'0')} onSaved={onSaved} onRemoved={onRemoved} onClose={()=>setEditing(null)}/>:<>
    <div className="walk-title-row"><h2><span className="walk-detail-number">{String(n).padStart(3,'0')}</span><span>{walk.title||'Untitled walk'}</span></h2><WalkActions walk={walk} onEdit={()=>setEditing(walk.id)}/></div>
    <div className="walk-detail-dates"><time dateTime={new Date(walk.startedAt).toISOString()}>{day(walk.startedAt)}</time><span className="walk-detail-time"> {time(walk.startedAt)}{walk.endedAt?`-${day(walk.startedAt)===day(walk.endedAt)?'':day(walk.endedAt)+' · '}${time(walk.endedAt)}`:''}</span></div>
+   <WalkPeople key={walk.id} walk={walk} onSaved={onSaved}/>
    {walk.description&&<p className="walk-description">{walk.description}</p>}
    <div className="walk-stats"><div><strong>{(walk.distance/1000).toFixed(1)}</strong><span>KM / ROUTE</span></div><div><strong>{Math.round(walk.duration/60)}</strong><span>MIN / WALKING</span></div><div><strong>{String(pins.length).padStart(2,'0')}</strong><span>IMPRESSIONS</span></div></div>
    {walk.mine&&walk.status!=='ended'&&<button className="primary walk-continue" onClick={()=>onContinue(walk)}>Continue this walk <ArrowUpRight size={14}/></button>}
    {!walk.path.length&&walk.status==='ended'&&<p className="walk-route-note">No GPS route recorded. The moments still belong here.</p>}
-   <div className="walk-moment-actions">{walk.mine&&<button className="walk-add-moment" onClick={()=>onAddMoment(walk)}><Plus size={14} strokeWidth={3} aria-hidden="true"/><span>Add a photo or video</span></button>}
+   <div className="walk-moment-actions">{(walk.mine||walk.canEdit)&&<button className="walk-add-moment" onClick={()=>onAddMoment(walk)}><Plus size={14} strokeWidth={3} aria-hidden="true"/><span>Add a photo or video</span></button>}
    {!!pins.length&&<button className="walk-filmstrip-toggle" aria-expanded={filmstripOpen} onClick={onFilmstrip}><Play size={14} fill="currentColor" aria-hidden="true"/><span>Filmstrip</span></button>}<button type="button" className="walk-tracing-toggle" aria-pressed={tracingVisible} onClick={onTracingToggle}><Layers size={14}/><span>Tracing paper</span>{tracingVisible&&<Eye size={13}/>}</button></div>
    </>}
    {momentForm}
@@ -56,7 +58,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
     <span className="walk-stop-index">{String(walks.length-i).padStart(3,'0')}</span>
     <div><strong>{w.title||'Untitled walk'}</strong>
      <p>{day(w.startedAt)} · {(w.distance/1000).toFixed(1)} km · {formatDuration(w.duration)} · {count} {count===1?'impression':'impressions'}</p>
-     <span>{w.status!=='ended'?(w.mine?'In progress':`${w.author} · in progress`):w.mine?'Your walk':w.author}</span>
+     <span>{w.status!=='ended'?(w.mine?'In progress':`${w.author} · in progress`):w.participating?'Your shared walk':w.mine?'Your walk':w.author}</span>
     </div>
    </button><WalkActions walk={w} onEdit={()=>{onSelect(w.id);setEditing(w.id)}}/></div>;})}
   </section>

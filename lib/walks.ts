@@ -6,7 +6,7 @@ export type WalkPoint = [number, number, number, number];
 export type Walk = {
   id: string; title: string; description?: string; status: 'recording' | 'paused' | 'ended'; shared: boolean;
   startedAt: number; endedAt: number | null; distance: number; duration: number;
-  path: WalkPoint[]; author: string; mine: boolean;
+  path: WalkPoint[]; author: string; mine: boolean; ownerId?:string;participants?:{id:string;name:string}[];participating?:boolean;canEdit?:boolean;
 };
 
 export type WalkRow = {
@@ -18,7 +18,7 @@ export function toWalk(w: WalkRow, userId: string): Walk {
   return {
     id: w.id, title: w.title, description:w.description??'', status: w.status, shared: w.shared,
     startedAt: Date.parse(w.started_at), endedAt: w.ended_at ? Date.parse(w.ended_at) : null,
-    distance: w.distance_m, duration: w.duration_s, path: w.path ?? [], author: w.author_name, mine: w.owner === userId,
+    distance: w.distance_m, duration: w.duration_s, path: w.path ?? [], author: w.author_name, ownerId:w.owner, mine: w.owner === userId,
   };
 }
 

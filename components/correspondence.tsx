@@ -5,6 +5,10 @@ import {paperCategory,type Paper,type PaperCategory,type PaperMaterial,type Shee
 import {REFERENCE_IMAGE_ACCEPT,REFERENCE_VIDEO_ACCEPT,referenceError,uploadPaperReference} from '@/lib/paper-references';
 
 import PaperTextEditor from './paper-text-editor';
+import PaperTags from './paper-tags';
+import PaperFilterOptions from './paper-filters';
+import {emptyTags,type PhotoTags} from '@/lib/gallery';
+import {emptyPaperFilters,paperFilterCount,paperMatchesFilters,type PaperFilters} from '@/lib/paper-filters';
 import {findPaperSpace} from '@/lib/paper-placement';
 import {paperTextPlain} from '@/lib/paper-text';
 
@@ -34,7 +38,7 @@ function PaperMaterialControl({value,onChange,disabled=false}:{value:PaperMateri
  return <fieldset className="paper-material-toggle" disabled={disabled}><legend className="sr-only">Paper type</legend><button type="button" aria-pressed={value==='opaque'} onClick={()=>onChange('opaque')}>paper</button><button type="button" aria-pressed={value==='tracing'} onClick={()=>onChange('tracing')}>tracing paper</button></fieldset>;
 }
 
-function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,onMove,onSave,onFocus,layer,children,onEdit,titleEditor,editor,material='opaque'}:{description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit:()=>void;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
+function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,onMove,onSave,onFocus,layer,children,onEdit,titleEditor,editor,tagControl,material='opaque'}:{tagControl?:ReactNode;description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit:()=>void;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
  const drag=useRef<{pointer:number;x:number;y:number;origin:Position;latest:Position}|null>(null);
  function start(e:ReactPointerEvent<HTMLButtonElement>){if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY,origin:position,latest:position};onFocus()}
  function move(e:ReactPointerEvent<HTMLButtonElement>){const d=drag.current;if(!d||d.pointer!==e.pointerId)return;const p={x:Math.max(0,Math.min(10000,d.origin.x+e.clientX-d.x)),y:Math.max(0,Math.min(10000,d.origin.y+e.clientY-d.y))};d.latest=p;onMove(p)}
@@ -43,7 +47,7 @@ function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,onM
  return <article id={'paper-'+id} className={'board-paper'+(material==='tracing'?' tracing-paper':'')} style={{left:position.x,top:position.y,zIndex:layer}} onPointerDown={onFocus} aria-label={title}>
   {paperTape(id).map(({clipPath,...style},index)=><button key={index} type="button" className="paper-tape" style={style} aria-label={`Move ${title} using sticker ${index+1}`} title="Drag to move · arrow keys also work" onPointerDown={start} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} onKeyDown={keyboard}><span className="paper-tape-strip" style={{clipPath}}/></button>)}
   <button className="paper-edit-button" type="button" aria-label={'Edit '+title} onClick={onEdit}><Pencil size={14}/></button>
-  <header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2><div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>{description&&<p className="paper-chat-description">{description}</p>}</header>{children}{editor}
+  <header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2><div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>{description&&<p className="paper-chat-description">{description}</p>}{tagControl}</header>{children}{editor}
  </article>;
 }
 
@@ -56,7 +60,9 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  const uploadReference=useContext(PaperReferenceUploadContext);
  const[confirmRemoval,setConfirmRemoval]=useState(false);
 
- const[group,setGroup]=useState<PaperCategory|'all'>('all'),[filterOpen,setFilterOpen]=useState(false),[category,setCategory]=useState<PaperCategory>('messages');
+ const[filters,setFilters]=useState<PaperFilters>(emptyPaperFilters),[filterOpen,setFilterOpen]=useState(false),[category,setCategory]=useState<PaperCategory>('messages');
+ const group=filters.group,activeFilters=paperFilterCount(filters);
+ const[paperTags,setPaperTags]=useState<Record<string,PhotoTags>>({}),[tagsAvailable,setTagsAvailable]=useState(false);
 
  const[editing,setEditing]=useState<Paper|null>(null),[settings,setSettings]=useState<Record<string,SheetSettings>>({});
  const[papers,setPapers]=useState<Paper[]>([]),[loading,setLoading]=useState(!localPreview),[error,setError]=useState(''),[title,setTitle]=useState(''),[shared,setShared]=useState(true),[material,setMaterial]=useState<PaperMaterial>('opaque'),[saving,setSaving]=useState(false),[positions,setPositions]=useState<Record<string,Position>>({room:{x:56,y:50},contributors:{x:478,y:144}}),[layers,setLayers]=useState<Record<string,number>>({}),[notice,setNotice]=useState('');
@@ -66,8 +72,9 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  const load=useCallback(async()=>{
   if(localPreview)return;
   const version=boardRevision.current;
-  const results=await Promise.allSettled([fetch('/api/papers').then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Papers could not be loaded.');return data.papers as Paper[]}),fetch('/api/papers/settings').then(async r=>{const data=await r.json();if(!r.ok)throw Error();return data.settings as SheetSettings[]})]);
+  const results=await Promise.allSettled([fetch('/api/papers').then(async r=>{const data=await r.json();if(!r.ok)throw Error(data.error||'Papers could not be loaded.');return data.papers as Paper[]}),fetch('/api/papers/settings').then(async r=>{const data=await r.json();if(!r.ok)throw Error();return data.settings as SheetSettings[]}),fetch('/api/papers/tags').then(async r=>{const data=await r.json();if(!r.ok)throw Error();return data as {tags:Record<string,PhotoTags>;available:boolean}})]);
   if(version!==boardRevision.current)return;
+  if(results[2].status==='fulfilled'){setPaperTags(results[2].value.tags);setTagsAvailable(results[2].value.available)}else setTagsAvailable(false);
   if(results[1].status==='fulfilled')setSettings(Object.fromEntries(results[1].value.map(s=>[s.id,s])));
   if(results[0].status==='fulfilled'){const list=results[0].value;setPapers(list);setPositions(current=>{const next={...current};for(const p of list)if(!pending.current.has(p.id))next[p.id]={x:p.x,y:p.y};return next});setError('')}else setError(results[0].reason instanceof Error?results[0].reason.message:'Papers could not be loaded.');
 
@@ -77,11 +84,13 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  useEffect(()=>{if(localPreview)return;try{const saved=JSON.parse(localStorage.getItem('lichtraum-correspondence-fixed-papers-v1')||'{}');setPositions(current=>{const next={...current};for(const id of ['room','contributors'])if(saved[id]&&Number.isFinite(saved[id].x)&&Number.isFinite(saved[id].y))next[id]={x:Math.max(0,Math.min(10000,saved[id].x)),y:Math.max(0,Math.min(10000,saved[id].y))};return next})}catch{}},[]);
  useEffect(()=>{if(!draftFile){setDraftPreview('');return;}const url=URL.createObjectURL(draftFile);setDraftPreview(url);return()=>URL.revokeObjectURL(url)},[draftFile]);
  useEffect(()=>{if(!filterOpen)return;function outside(e:globalThis.PointerEvent){if(!filterControl.current?.contains(e.target as Node))setFilterOpen(false)}document.addEventListener('pointerdown',outside);return()=>document.removeEventListener('pointerdown',outside)},[filterOpen]);
- function filterPapers(value:PaperCategory|'all'){
+ function filterPapers(value:PaperFilters){
   if(editing){setNotice('Save or cancel the current paper first.');return;}
-  setGroup(value);setFilterOpen(false);filterButton.current?.focus();
-  const first=papers.find(p=>paperCategory(p)===value),position=value==='references'?(first?positions[first.id]:undefined):positions.room;
-  if(position)scroller.current?.scrollTo({left:Math.max(0,position.x-50),top:Math.max(0,position.y-40),behavior:'smooth'});
+  setFilters(value);
+  const room={title:settings.room?.title??'Messages',category:'messages' as const,material:settings.room?.material};
+  const first=paperMatchesFilters(room,paperTags.room,value)?'room':papers.find(p=>paperMatchesFilters(p,paperTags[p.id],value))?.id;
+  const position=first?positions[first]:undefined;
+  if(position)scroller.current?.scrollTo({left:Math.max(0,position.x-50),top:Math.max(0,position.y-40),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
  }
  function move(id:string,p:Position){pending.current.add(id);setPositions(current=>({...current,[id]:p}))}
  function savePosition(id:string,p:Position){
@@ -125,7 +134,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
     }
     setPapers(list=>[...list.filter(p=>p.id!==paper.id),paper].sort((a,b)=>a.createdAt-b.createdAt));
    }
-   boardRevision.current+=1;setDraft(null);setDraftText('');setDraftFile(null);creation.current=null;setEditing(null);setTitle('');if(!builtin&&group!=='all')setGroup(category);
+   boardRevision.current+=1;setDraft(null);setDraftText('');setDraftFile(null);creation.current=null;setEditing(null);setTitle('');if(!builtin&&group!=='all')setFilters(value=>({...value,group:category}));
   }catch(e){setError(e instanceof Error?e.message:'Your paper could not be saved.')}finally{setSaving(false)}
  }
  async function removePaper(){
@@ -141,6 +150,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  }
  function startPaper(){
   if(editing){setNotice('Save or cancel the current paper first.');return;}
+  setFilters(emptyPaperFilters());
   const occupied=['room',...papers.map(p=>p.id)].map(id=>{const node=document.getElementById('paper-'+id),p=positions[id]??papers.find(p=>p.id===id)??{x:56,y:50};return {x:p.x,y:p.y,width:node?.offsetWidth??(id==='room'?380:330),height:node?.offsetHeight??560}});
   const view=scroller.current;
   const position=findPaperSpace(occupied,{x:view?.scrollLeft??0,y:view?.scrollTop??0,width:view?.clientWidth??1000,height:view?.clientHeight??800});
@@ -155,6 +165,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
   const active=editing?.id===id;
   return <Receipt
    onEdit={()=>editPaper(papers.find(p=>p.id===id)??{id,title:name,material:sheetMaterial,shared:true,mine:true,author:'',x:positions[id]?.x??0,y:positions[id]?.y??0,createdAt:0})}
+   tagControl={!active&&!id.startsWith('draft-')?<PaperTags id={id} value={paperTags[id]??emptyTags()} available={tagsAvailable} onSaved={tags=>{boardRevision.current+=1;setPaperTags(values=>({...values,[id]:tags}))}}/>:undefined}
    description={id==='room'?'chat of Lena and Mona':undefined} createdAt={id==='room'?roomDates.createdAt:(draft?.id===id?draft:papers.find(p=>p.id===id))?.createdAt} updatedAt={id==='room'?roomDates.updatedAt:papers.find(p=>p.id===id)?.updatedAt} material={active?material:sheetMaterial} key={id} id={id} title={name}
    subtitle={subtitle.split('/')[0].trim().padStart(3,'0')}
    titleEditor={active?<textarea className="paper-title-editor" aria-label="Paper title" placeholder={draft?'Paper title…':undefined} autoFocus rows={1} maxLength={80} value={title} disabled={saving} ref={node=>{if(node){node.style.height='auto';node.style.height=node.scrollHeight+'px'}}} onChange={e=>setTitle(e.target.value)} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();cancelEdit()}}}/>:undefined}
@@ -167,15 +178,16 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  };
  return <section className="correspondence-board" aria-label="Working notes board">
   <h1 className="board-side-label">03 working notes</h1><header className="board-toolbar"><div className="board-actions"><button className="board-new" aria-label="New paper" title="New paper" disabled={localPreview||loading} onClick={startPaper}><Plus size={32} strokeWidth={3} aria-hidden="true"/></button><div className="paper-filter" ref={filterControl} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setFilterOpen(false);filterButton.current?.focus()}}}>
-   <button ref={filterButton} className={'paper-filter-trigger'+(group!=='all'?' is-filtered':'')} aria-label={'Filter papers'+(group!=='all'?': '+group:'')} title="Filter papers" aria-expanded={filterOpen} aria-controls="paper-filter-options" onClick={()=>setFilterOpen(value=>!value)}><SlidersHorizontal size={32} strokeWidth={3} aria-hidden="true"/>{group!=='all'&&<span className="paper-filter-dot" aria-hidden="true"/>}</button>
-   {filterOpen&&<fieldset id="paper-filter-options" className="paper-filter-options"><legend>show papers</legend>{(['all','references','messages'] as const).map(value=><label key={value}><input type="radio" name="paper-filter" value={value} checked={group===value} onChange={()=>filterPapers(value)}/><span>{value==='all'?'all papers':value}</span></label>)}</fieldset>}
+   <button ref={filterButton} className={'paper-filter-trigger'+(activeFilters?' is-filtered':'')} aria-label={'Filter papers'+(activeFilters?': '+activeFilters+' active':'')} title="Filter papers" aria-expanded={filterOpen} aria-controls="paper-filter-options" onClick={()=>setFilterOpen(value=>!value)}><SlidersHorizontal size={32} strokeWidth={3} aria-hidden="true"/>{activeFilters>0&&<span className="paper-filter-dot" aria-hidden="true"/>}</button>
+   {filterOpen&&<PaperFilterOptions value={filters} onChange={filterPapers} disabled={!!editing}/>}
   </div></div></header>
 
   {(error||notice)&&<div className="board-notice" role="status">{error||notice}<button onClick={load}>refresh</button></div>}
   <div className="board-scroll" ref={scroller}><div className="board-canvas" style={{width:canvasWidth,height:canvasHeight}}>
-   {receipt('room',settings.room?.title??'Messages','000',<Entries endpoint="/api/community" localPreview={localPreview} chat editing={editing?.id==='room'} disabled={saving} onDatesChange={updateRoomDates} ref={handle=>{if(handle)entryEditors.current.set('room',handle);else entryEditors.current.delete('room')}}/>,settings.room?.material)}
+   {paperMatchesFilters({title:settings.room?.title??'Messages',category:'messages',material:settings.room?.material},paperTags.room,filters)&&receipt('room',settings.room?.title??'Messages','000',<Entries endpoint="/api/community" localPreview={localPreview} chat editing={editing?.id==='room'} disabled={saving} onDatesChange={updateRoomDates} ref={handle=>{if(handle)entryEditors.current.set('room',handle);else entryEditors.current.delete('room')}}/>,settings.room?.material)}
 
-   {papers.filter(p=>p.id!==creation.current?.id).map((p,i)=>({p,i})).filter(({p})=>group==='all'||paperCategory(p)===group).map(({p,i})=>receipt(p.id,p.title,`${String(i+3).padStart(2,'0')} / ${p.shared?'shared':'only you'} / ${p.author}`,<Entries endpoint={'/api/papers/'+p.id+'/entries'} onChanged={load} localPreview={localPreview} editing={editing?.id===p.id} disabled={saving} ref={handle=>{if(handle)entryEditors.current.set(p.id,handle);else entryEditors.current.delete(p.id)}}/>,p.material))}
+   {papers.filter(p=>p.id!==creation.current?.id).map((p,i)=>({p,i})).filter(({p})=>paperMatchesFilters(p,paperTags[p.id],filters)).map(({p,i})=>receipt(p.id,p.title,`${String(i+3).padStart(2,'0')} / ${p.shared?'shared':'only you'} / ${p.author}`,<Entries endpoint={'/api/papers/'+p.id+'/entries'} onChanged={load} localPreview={localPreview} editing={editing?.id===p.id} disabled={saving} ref={handle=>{if(handle)entryEditors.current.set(p.id,handle);else entryEditors.current.delete(p.id)}}/>,p.material))}
+   {activeFilters>0&&!draft&&!loading&&!paperMatchesFilters({title:settings.room?.title??'Messages',category:'messages',material:settings.room?.material},paperTags.room,filters)&&!papers.some(p=>paperMatchesFilters(p,paperTags[p.id],filters))&&<div className="paper-filter-empty"><p>No sheets match these filters.</p><button type="button" onClick={()=>filterPapers(emptyPaperFilters())}>show all papers</button></div>}
    {draft&&receipt(draft.id,'New paper',String(papers.length+3).padStart(3,'0'),<div className="paper-notes paper-draft-body" ref={draftBody}>
     <PaperTextEditor value={draftText} onChange={setDraftText} label="New paper text" disabled={saving}/>
     {draftPreview&&<div className="paper-reference-draft">{draftFile?.type.startsWith('video/')?<video src={draftPreview} controls playsInline aria-label="Selected reference video"/>:<img src={draftPreview} alt="Selected reference image"/>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={saving} onClick={()=>{setDraftFile(null);draftUpload.current=null}}><X size={13}/></button></div>}

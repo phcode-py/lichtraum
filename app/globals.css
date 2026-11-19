@@ -1087,3 +1087,39 @@ main:has(.navigation-trigger[aria-expanded=true]) .account-side-label{visibility
 .navigation-sheet>button.navigation-heading:hover,.navigation-sheet>button.navigation-heading:focus-visible{color:#4b68ff;text-decoration:none;text-shadow:0 0 4px #fff,0 0 12px #4165ff8c,0 0 24px #4165ff50}
 .navigation-sheet>button.navigation-heading:hover::after,.navigation-sheet>button.navigation-heading:focus-visible::after{opacity:1}
 @media(prefers-reduced-motion:reduce){.navigation-sheet>button.navigation-heading,.navigation-sheet>button.navigation-heading::after{transition:none}}
+
+/* Working notes reuse the atlas tag vocabulary without moving any sheets. */
+.paper-filter-expanded{width:286px;max-width:calc(100vw - 40px);max-height:min(72dvh,700px);overflow-y:auto;padding:18px 20px;overscroll-behavior:contain;scrollbar-width:thin}
+.paper-filter-expanded fieldset{border:0;padding:0;margin:16px 0 22px;min-width:0}
+.paper-filter-expanded legend{float:none;width:auto;font:10px/1.6 'Courier New',Courier,monospace;color:#8b8b81;letter-spacing:0;margin:0 0 10px}
+.paper-filter-expanded label{font-size:11px;line-height:1.6;margin:9px 0}
+.paper-filter-expanded input[type=checkbox]{accent-color:var(--blue);flex-shrink:0;width:13px;height:13px;margin:3px 0 0}
+.paper-filter-expanded select{width:100%;padding:7px 0;border:0;border-bottom:1px solid #dfe3d7;background:none;color:#4d5548;font-size:11px}
+.paper-filter-clear,.paper-filter-empty button{color:var(--blue);padding:0;font-size:11px}
+.paper-filter-empty{position:absolute;left:56px;top:50px;padding:24px;background:#fffffcdf;color:#8b8b81}
+.paper-tags{position:relative;margin-top:15px}
+.paper-tags-trigger{display:flex;align-items:flex-start;gap:6px;padding:0;color:var(--blue);font:10px/1.6 'Courier New',Courier,monospace;text-align:left}
+.paper-tags-trigger svg{flex-shrink:0;margin-top:2px}
+.paper-tags-editor{padding:18px 0 8px;color:#4d5548}
+.paper-tags-heading,.paper-tag-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--blue);font-size:11px}
+.paper-tags-heading>button{padding:0}
+.paper-tags-editor .photo-tag-fields{margin-top:12px}
+.paper-tags-editor .photo-tag-fields legend,.paper-tag-status{font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81}
+.paper-tags-editor .tag-choice-list small{display:none}
+.paper-tag-actions{justify-content:flex-end;margin-top:18px}
+.topbar-actions .walk-start,.topbar-actions .primary{transition:color .3s ease,text-shadow .3s ease}
+.topbar-actions .walk-start:hover:not(:disabled),.topbar-actions .primary:hover:not(:disabled),.topbar-actions .walk-start:focus-visible,.topbar-actions .primary:focus-visible{color:#4b68ff;text-decoration:none;text-shadow:0 0 4px #fff,0 0 12px #4165ff8c,0 0 24px #4165ff50}
+.topbar-actions .walk-start:hover .walk-ring,.topbar-actions .walk-start:focus-visible .walk-ring{box-shadow:0 0 10px #4165ff65}
+.topbar-actions .primary:hover svg,.topbar-actions .primary:focus-visible svg{filter:drop-shadow(0 0 6px #4165ff80)}
+@media(prefers-reduced-motion:reduce){.topbar-actions .walk-start,.topbar-actions .primary{transition:none}}
+.walk-people{margin:16px 0 24px;font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81}
+.walk-people-summary{display:flex;align-items:flex-start;gap:7px}
+.walk-people-summary>svg{margin-top:2px;flex-shrink:0}
+.walk-people-summary>span{flex:1;min-width:0}
+.walk-people-summary>button{color:var(--blue);padding:0;white-space:nowrap;font-size:10px}
+.walk-people-editor{margin-top:16px;padding:18px 0;border-top:1px solid #dfe3d7}
+.walk-people-heading{display:flex;justify-content:space-between;align-items:center;color:var(--blue);font-size:11px}
+.walk-people-heading button{padding:0}
+.walk-people-options label{display:flex;align-items:center;gap:8px;padding:8px 0;font:12px/1.6 var(--font-interface);color:#4d5548}
+.walk-people-options input{accent-color:var(--blue)}
+.walk-people-note{margin:14px 0;font-size:10px}

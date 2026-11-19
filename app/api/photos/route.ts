@@ -1,3 +1,4 @@
+import {isWalkParticipant} from '@/lib/walk-participants';
 import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
 import {emptyTags,parseTags} from '@/lib/gallery';
 import {readPhotoTags,writePhotoTags} from '@/lib/photo-tags-server';
@@ -51,6 +52,8 @@ export async function POST(request: Request) {
       !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 47.25 || lat > 47.5 || lng < 8.35 || lng > 8.75) {
     return Response.json({ error: 'Add a title, a photo or video, and a location in Zürich.' }, { status: 400 });
   }
+
+  if(walk){const {data:target,error:walkError}=await supabase.from('walks').select('owner').eq('id',walk).maybeSingle();if(walkError||!target||(target.owner!==user.id&&!await isWalkParticipant(supabase,walk)))return Response.json({error:'Only the creator and added participants can add photos to this walk.'},{status:403});}
 
   if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before posting.'}, {status:400});
 
