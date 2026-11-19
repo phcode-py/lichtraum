@@ -40,7 +40,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel}:{
    <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)} disabled={busy}/></label>
    <label className="field">What caught your eye?<select value={category} onChange={e=>setCategory(e.target.value)} disabled={busy}><option>Reflection</option><option>Light</option><option>Shadow</option><option>Other</option></select></label>
    <label className="field">Description <span>(optional)</span><textarea maxLength={600} rows={3} value={caption} onChange={e=>setCaption(e.target.value)} disabled={busy} placeholder="A few words about this moment."/></label>
-   <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)} disabled={busy}/><span>Share with my walking partner<small>{shared?'Visible to everyone in the atlas.':'Private to you.'}</small></span></label>
+   <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)} disabled={busy}/><span>Share with my walking partner</span></label>
    {error&&<p className="form-error" role="alert">{error}</p>}
    <div className="photo-edit-actions">
     <button type="button" onClick={onCancel} disabled={busy}>Cancel</button>

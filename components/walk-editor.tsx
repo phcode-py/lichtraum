@@ -57,7 +57,7 @@ export default function WalkEditor({walk,onSaved,onClose,onRemoved,number,routeD
      <div className="walk-editor-totals"><label className="field">Distance <span>km</span><input type="number" required min="0" max="1000" step="any" inputMode="decimal" value={distance} onChange={e=>setDistance(e.target.value)}/></label><label className="field">Walking time <span>minutes</span><input type="number" required min="0" step="any" inputMode="decimal" value={minutes} onChange={e=>setMinutes(e.target.value)}/></label></div>
      {!walk&&<p className="walk-editor-note">No GPS route needed. Use 0 for distance or walking time if unknown. Add photos and videos after saving.</p>}
     </>:<><p className="walk-editor-note">Finish this walk to edit its dates, distance and walking time.</p><label className="field">Description<textarea maxLength={2000} rows={3} value={description} onChange={e=>setDescription(e.target.value)}/></label></>}
-    <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)}/><span>Share in our walks<small>{shared?'Visible to everyone signed in to Lichtraum.':'Only you can see this walk.'}</small></span></label>
+    <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)}/><span>Share in our walks</span></label>
    </fieldset>
    {error&&<p className="form-error" role="alert">{error}</p>}
    {confirmRemove&&<div className="walk-remove-confirmation"><p>Remove this walk and its route? Photographs will stay in the light atlas.</p><button type="button" disabled={busy} onClick={()=>setConfirmRemove(false)}>keep walk</button><button type="button" disabled={busy} onClick={remove}>{busy?'removing…':'remove walk'}</button></div>}
