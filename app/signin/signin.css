@@ -1,20 +1,37 @@
-.signin{min-height:100dvh;display:flex;flex-direction:column}
-.signin-sheet{width:min(440px,calc(100% - 40px));margin:clamp(40px,10vh,110px) auto 40px;border:1px solid var(--ink);background:#fff;box-shadow:6px 6px 0 var(--ink);padding:0 32px 30px}
-.signin-index{display:flex;justify-content:space-between;margin:0 -32px 34px;padding:11px 16px;border-bottom:1px solid var(--ink);font-size:8px;font-weight:600;letter-spacing:1.2px}
-.signin h1{margin:0;font-size:46px;line-height:.95;letter-spacing:-2.4px;font-weight:800}
-.signin-lede{margin:16px 0 10px;font-size:12px;color:var(--muted)}
-.signin .field span{font-weight:400;color:var(--muted)}
-.signin-submit{width:100%;margin-top:24px;justify-content:space-between}
-.signin-sent p{font-size:12px;line-height:1.5;margin:16px 0 0}
-.signin-check{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--red);color:#fff;margin-bottom:20px}
-.signin-again{margin-top:20px;padding:0;font-size:9px;letter-spacing:.8px;text-transform:uppercase;font-weight:600;text-decoration:underline}
-@media(max-width:720px){.signin .topbar{height:71px;padding:0 21px}.signin-sheet{padding:0 22px 24px}.signin-index{margin:0 -22px 28px}.signin h1{font-size:38px}}
-.signin-tabs{display:flex;margin:-34px -32px 30px;border-bottom:1px solid var(--ink)}
-.signin-tabs button{flex:1;padding:12px 0;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.signin-tabs button+button{border-left:1px solid var(--ink)}
-.signin-tabs button.active{background:var(--ink);color:var(--paper)}
-.signin-tabs button.active:hover{color:var(--paper)}
-.signin .signin-again{display:inline-block;background:none;border:0;color:var(--ink);cursor:pointer}
-.signin .signin-again:hover{color:var(--red)}
-.signin-sent .signin-submit{margin-top:24px}
-@media(max-width:720px){.signin-tabs{margin:-28px -22px 26px}}
+.signin{position:relative;isolation:isolate;min-height:100dvh;display:grid;place-items:center;padding:96px 40px 56px;background:#eff0ec;overflow-x:clip}
+.signin-map{position:fixed;z-index:-2;inset:-18px;background:#eceee9}
+.signin-map .maplibregl-canvas-container{filter:blur(10px);opacity:.58}
+.signin-map .maplibregl-control-container{position:fixed;inset:0;pointer-events:none}
+.signin-map .maplibregl-ctrl-bottom-right{right:24px;bottom:24px;pointer-events:auto;font-size:10px}
+.signin-map .maplibregl-ctrl-attrib{background:#fffffcaa;color:#747a6d}
+.signin-header{position:absolute;left:40px;top:36px;z-index:1}
+.signin-brand{display:flex;flex-direction:column;align-items:flex-start;color:var(--blue);font-size:18px;font-weight:700;line-height:1.05;letter-spacing:-.025em;text-decoration:none;transition:color .3s,text-shadow .3s}
+.signin-brand:hover,.signin-brand:focus-visible{color:#4b68ff;text-decoration:none;text-shadow:0 0 4px #fff,0 0 12px #4165ff8c,0 0 24px #4165ff50}
+.signin-side-label{position:fixed;left:30px;top:50%;color:var(--blue);font-family:var(--font-display);font-size:16px;font-weight:500;letter-spacing:-.035em;text-transform:uppercase;white-space:nowrap;transform:translate(-50%,-50%) rotate(-90deg)}
+.signin-sheet{position:relative;width:min(100%,400px);margin:0;border:0;background:rgb(255 255 252 / 96%);box-shadow:0 3px 14px #1421180c;padding:32px 32px 30px;color:var(--ink)}
+.signin-tapes{position:absolute;inset:0;pointer-events:none}
+.signin-tapes span{position:absolute;display:block;width:18px;height:49px;background:var(--blue);opacity:.94;clip-path:polygon(0 1%,98% 0,100% 98%,1% 100%)}
+.signin-tapes span:nth-child(1){left:13%;top:-19px;transform:rotate(-7deg)}
+.signin-tapes span:nth-child(2){right:17%;top:-16px;transform:rotate(5deg)}
+.signin-tapes span:nth-child(3){left:15%;bottom:-20px;transform:rotate(-2deg)}
+.signin-tapes span:nth-child(4){right:18%;bottom:-18px;transform:rotate(-9deg)}
+.signin h1{margin:0;font-family:var(--font-display);font-size:34px;line-height:1.02;letter-spacing:-.055em;font-weight:500;color:var(--ink)}
+.signin-lede{margin:16px 0 24px;font-size:13px;line-height:1.65;color:#858a7e;max-width:31ch}
+.signin-tabs{display:flex;gap:24px;margin:0 0 28px;border:0}
+.signin-tabs button{padding:0 0 4px;border:0;border-bottom:1px solid transparent;background:none;font-size:13px;font-weight:400;line-height:1.5;color:#8b9082;text-transform:none;letter-spacing:0}
+.signin-tabs button.active{border-bottom-color:var(--blue);color:var(--blue)}
+.signin .field{display:flex;flex-direction:column;gap:9px;margin:18px 0 0;color:#858a7e;font:12px/1.5 'Courier New',Courier,monospace;letter-spacing:0}
+.signin .field span{font-weight:400;color:#94988d}
+.signin .field input{display:block;width:100%;min-height:40px;padding:4px 0 9px;border:0;border-bottom:1px solid #d9dcd2;border-radius:0;background:transparent;color:var(--ink);font:14px/1.5 Arial,Helvetica,sans-serif;outline-offset:5px}
+.signin .field input::placeholder{color:#b5b9af}
+.signin .field input:focus{border-bottom-color:var(--blue)}
+.signin .signin-submit{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;margin-top:24px;padding:4px 0;border:0;background:transparent;color:var(--blue);font-size:14px;font-weight:400;text-transform:none;letter-spacing:0}
+.signin .signin-submit:hover{color:#4b68ff;text-decoration:none;text-shadow:0 0 12px #4165ff50}
+.signin .signin-submit:disabled{color:var(--blue);opacity:.4}
+.signin .signin-again{display:inline-block;min-height:36px;margin:12px 0 0;padding:5px 0;border:0;background:none;color:#858a7e;font-size:12px;font-weight:400;line-height:1.5;letter-spacing:0;text-transform:none;text-decoration:none;cursor:pointer}
+.signin .signin-again:hover{color:var(--blue)}
+.signin .form-error{font-size:12px;line-height:1.6;margin:18px 0 0}
+.signin-sent p{font-size:13px;line-height:1.7;margin:20px 0;color:#858a7e;overflow-wrap:anywhere}
+.signin-check{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:transparent;color:var(--blue);margin-bottom:18px}
+@media(max-width:600px){.signin{padding:104px 36px 72px}.signin-header{left:28px;top:28px}.signin-brand{font-size:16px}.signin-side-label{left:16px;font-size:13px}.signin-sheet{padding:34px 26px 36px}.signin h1{font-size:32px}.signin-map .maplibregl-ctrl-bottom-right{right:24px;bottom:24px}}
+@media(prefers-reduced-motion:reduce){.signin-brand{transition:none}}

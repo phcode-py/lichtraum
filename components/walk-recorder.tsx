@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
+import {useImageViewer} from './image-viewer';
 import type {Map,Marker,GeoJSONSource} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {Camera,Check,LocateFixed,Pause,Play,Square} from 'lucide-react';
@@ -9,7 +10,7 @@ import {MEDIA_ACCEPT,uploadMedia} from '@/lib/media';
 import {inZurich,nearestPlace} from '@/lib/places';
 import {defaultWalkTitle,formatDuration,metres,segments,type Walk,type WalkPoint} from '@/lib/walks';
 
-type Impression={id:string;title:string;lat:number;lng:number;url:string;walk?:string};
+type Impression={mediaType?:'photo'|'video';id:string;title:string;lat:number;lng:number;url:string;walk?:string};
 type Fix={lng:number;lat:number;acc:number;t:number};
 type Status='recording'|'paused'|'saving'|'ended';
 
@@ -23,6 +24,7 @@ const round=(n:number)=>Math.round(n*1e6)/1e6;
  * the map follows you, the route draws as you go, and only time, distance and impressions are shown.
  */
 export default function WalkRecorder({walk,impressions,startPaused,onImpression,onDone}:{walk:Walk;impressions:Impression[];startPaused:boolean;onImpression:(photo:Impression)=>void;onDone:(walk:Walk)=>void}){
+ const openImage=useImageViewer();
  const[status,setStatus]=useState<Status>(startPaused?'paused':'recording');
  const statusRef=useRef<Status>(status);
  useEffect(()=>{statusRef.current=status;},[status]);
@@ -99,8 +101,8 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
  // Impression pins
  useEffect(()=>{const m=map.current,M=lib.current;if(!ready||!m||!M)return;
   pins.current.forEach(p=>p.remove());
-  pins.current=impressions.map(p=>{const node=document.createElement('span');node.className='walk-pin';node.style.backgroundImage=`url("${p.url}")`;return new M.Marker({element:node,anchor:'bottom'}).setLngLat([p.lng,p.lat]).addTo(m);});
- },[ready,impressions]);
+  pins.current=impressions.map(p=>{const node=document.createElement('button');node.type='button';node.className='walk-pin';node.setAttribute('aria-label','Enlarge '+p.title);node.style.backgroundImage=`url("${p.url}")`;node.addEventListener('click',event=>{event.stopPropagation();if(p.mediaType!=='video')openImage({url:p.url,title:p.title})});return new M.Marker({element:node,anchor:'bottom'}).setLngLat([p.lng,p.lat]).addTo(m);});
+ },[ready,impressions,openImage]);
 
  // --- GPS: always watching while this screen is open; only recorded while “recording”.
  useEffect(()=>{

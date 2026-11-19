@@ -1,4 +1,6 @@
 'use client';
+import {ImageViewButton} from './image-viewer';
+import PaperResize,{paperSize,type PaperSize} from './paper-resize';
 import {useContext,useCallback,useEffect,useRef,useState,type CSSProperties,type ReactNode,type PointerEvent as ReactPointerEvent,type KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {Camera,Video,Pencil,Plus,SlidersHorizontal,Trash2,X} from 'lucide-react';
 import {paperCategory,type Paper,type PaperCategory,type PaperMaterial,type SheetSettings} from '@/lib/papers';
@@ -38,20 +40,24 @@ function PaperMaterialControl({value,onChange,disabled=false}:{value:PaperMateri
  return <fieldset className="paper-material-toggle" disabled={disabled}><legend className="sr-only">Paper type</legend><button type="button" aria-pressed={value==='opaque'} onClick={()=>onChange('opaque')}>paper</button><button type="button" aria-pressed={value==='tracing'} onClick={()=>onChange('tracing')}>tracing paper</button></fieldset>;
 }
 
-function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,onMove,onSave,onFocus,layer,children,onEdit,titleEditor,editor,tagControl,material='opaque'}:{tagControl?:ReactNode;description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit:()=>void;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
+function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,size,onResize,onSaveSize,onMove,onSave,onFocus,layer,children,onEdit,titleEditor,editor,tagControl,material='opaque'}:{size?:PaperSize;onResize:(size:PaperSize)=>void;onSaveSize:(size:PaperSize)=>void;tagControl?:ReactNode;description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit:()=>void;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
  const drag=useRef<{pointer:number;x:number;y:number;origin:Position;latest:Position}|null>(null);
  function start(e:ReactPointerEvent<HTMLButtonElement>){if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY,origin:position,latest:position};onFocus()}
  function move(e:ReactPointerEvent<HTMLButtonElement>){const d=drag.current;if(!d||d.pointer!==e.pointerId)return;const p={x:Math.max(0,Math.min(10000,d.origin.x+e.clientX-d.x)),y:Math.max(0,Math.min(10000,d.origin.y+e.clientY-d.y))};d.latest=p;onMove(p)}
  function finish(e:ReactPointerEvent<HTMLButtonElement>){const d=drag.current;if(!d||d.pointer!==e.pointerId)return;drag.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);if(d.latest.x!==d.origin.x||d.latest.y!==d.origin.y)onSave(d.latest)}
  function keyboard(e:ReactKeyboardEvent<HTMLButtonElement>){const directions:Record<string,Position>={ArrowLeft:{x:-20,y:0},ArrowRight:{x:20,y:0},ArrowUp:{x:0,y:-20},ArrowDown:{x:0,y:20}};const d=directions[e.key];if(!d)return;e.preventDefault();onFocus();const p={x:Math.max(0,Math.min(10000,position.x+d.x)),y:Math.max(0,Math.min(10000,position.y+d.y))};onMove(p);onSave(p)}
- return <article id={'paper-'+id} className={'board-paper'+(material==='tracing'?' tracing-paper':'')} style={{left:position.x,top:position.y,zIndex:layer}} onPointerDown={onFocus} aria-label={title}>
+ return <article id={'paper-'+id} className={'board-paper'+(material==='tracing'?' tracing-paper':'')} style={{left:position.x,top:position.y,zIndex:layer,...(size?{width:size.width,height:size.height,minHeight:0}:{})}} onPointerDown={onFocus} aria-label={title}>
   {paperTape(id).map(({clipPath,...style},index)=><button key={index} type="button" className="paper-tape" style={style} aria-label={`Move ${title} using sticker ${index+1}`} title="Drag to move · arrow keys also work" onPointerDown={start} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} onKeyDown={keyboard}><span className="paper-tape-strip" style={{clipPath}}/></button>)}
   <button className="paper-edit-button" type="button" aria-label={'Edit '+title} onClick={onEdit}><Pencil size={14}/></button>
-  <header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2><div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>{description&&<p className="paper-chat-description">{description}</p>}{tagControl}</header>{children}{editor}
+  <div className="paper-content"><header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2><div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>{description&&<p className="paper-chat-description">{description}</p>}{tagControl}</header>{children}{editor}</div><PaperResize title={title} onResize={onResize} onSave={onSaveSize} onFocus={onFocus}/>
  </article>;
 }
 
 export default function Correspondence({localPreview=false}:{localPreview?:boolean}={}){
+ const[sizes,setSizes]=useState<Record<string,PaperSize>>({});
+ useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('lichtraum-paper-sizes-v1')||'{}');if(!saved||typeof saved!=='object'||Array.isArray(saved))return;const valid:Record<string,PaperSize>={};for(const [id,value] of Object.entries(saved)){const size=value as Partial<PaperSize>|null;if(size&&typeof size.width==='number'&&typeof size.height==='number'&&Number.isFinite(size.width)&&Number.isFinite(size.height))valid[id]=paperSize(size.width,size.height)}setSizes(valid)}catch{}},[]);
+ function resize(id:string,size:PaperSize){setSizes(current=>({...current,[id]:size}))}
+ function saveSize(id:string,size:PaperSize){resize(id,size);try{const saved=JSON.parse(localStorage.getItem('lichtraum-paper-sizes-v1')||'{}');localStorage.setItem('lichtraum-paper-sizes-v1',JSON.stringify({...saved,[id]:size}))}catch{}}
  const entryEditors=useRef(new Map<string,EntriesHandle>());
  const[roomDates,setRoomDates]=useState<ChatDates>({});
  const updateRoomDates=useCallback((next:ChatDates)=>setRoomDates(current=>current.createdAt===next.createdAt&&current.updatedAt===next.updatedAt?current:next),[]);
@@ -130,6 +136,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
       const response=await fetch('/api/papers/'+paper.id+'/entries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:draftText,...(draftFile?{imageKey}:{})})});
       const entry=await response.json();if(!response.ok)throw Error(entry.error||'The paper was created; your note is still here. Save again to finish.');
      }
+     if(sizes[draft.id])saveSize(paper.id,sizes[draft.id]);
      setPositions(current=>{const next={...current,[paper.id]:position!};delete next[draft.id];return next});focus(paper.id);
     }
     setPapers(list=>[...list.filter(p=>p.id!==paper.id),paper].sort((a,b)=>a.createdAt-b.createdAt));
@@ -160,7 +167,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
   requestAnimationFrame(()=>view?.scrollTo({left:Math.max(0,position.x-32),top:Math.max(0,position.y-32),behavior:'smooth'}));
  }
  function chooseDraftFile(file?:File){if(!file||saving)return;const problem=referenceError(file);if(problem){setError(problem);return;}setDraftFile(file);draftUpload.current=null;setError('')}
- const canvasWidth=Math.max(1230,...Object.values(positions).map(p=>p.x+420)),canvasHeight=Math.max(950,...Object.values(positions).map(p=>p.y+900));
+ const canvasWidth=Math.max(1230,...Object.entries(positions).map(([id,p])=>p.x+(sizes[id]?.width??420)+80)),canvasHeight=Math.max(950,...Object.entries(positions).map(([id,p])=>p.y+(sizes[id]?.height??900)+80));
  const receipt=(id:string,name:string,subtitle:string,children:ReactNode,sheetMaterial:PaperMaterial='opaque')=>{
   const active=editing?.id===id;
   return <Receipt
@@ -174,7 +181,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
     {error&&<p className="paper-error" role="alert">{error}</p>}
     {confirmRemoval?<div className="paper-delete-confirm" role="group" aria-label="Confirm paper deletion"><p>Remove “{editing.title}” from the board for everyone? Its notes and reference images will be kept in storage.</p><div><button type="button" disabled={saving} onClick={()=>{setConfirmRemoval(false);setError('')}}>keep paper</button><button type="button" className="paper-delete-confirm-button" disabled={saving} onClick={removePaper}>{saving?'removing…':'delete paper'}</button></div></div>:<div className="paper-inline-actions">{!draft&&!builtin&&editing.mine&&<button className="paper-delete" type="button" aria-label={'Delete '+editing.title} title="Delete paper" disabled={saving||localPreview} onClick={()=>{setError('');setConfirmRemoval(true)}}><Trash2 size={14}/></button>}<button type="button" disabled={saving} onClick={cancelEdit}>cancel</button><button disabled={saving||!title.trim()}>{saving?'saving…':draft?'publish paper':'save changes'}</button></div>}
    </form>:undefined}
-   position={positions[id]||{x:820,y:64}} onMove={p=>move(id,p)} onSave={p=>savePosition(id,p)} onFocus={()=>focus(id)} layer={layers[id]||1}>{children}</Receipt>;
+   size={sizes[id]} onResize={size=>resize(id,size)} onSaveSize={size=>saveSize(id,size)} position={positions[id]||{x:820,y:64}} onMove={p=>move(id,p)} onSave={p=>savePosition(id,p)} onFocus={()=>focus(id)} layer={layers[id]||1}>{children}</Receipt>;
  };
  return <section className="correspondence-board" aria-label="Working notes board">
   <h1 className="board-side-label">03 working notes</h1><header className="board-toolbar"><div className="board-actions"><button className="board-new" aria-label="New paper" title="New paper" disabled={localPreview||loading} onClick={startPaper}><Plus size={32} strokeWidth={3} aria-hidden="true"/></button><div className="paper-filter" ref={filterControl} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setFilterOpen(false);filterButton.current?.focus()}}}>
@@ -190,7 +197,7 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
    {activeFilters>0&&!draft&&!loading&&!paperMatchesFilters({title:settings.room?.title??'Messages',category:'messages',material:settings.room?.material},paperTags.room,filters)&&!papers.some(p=>paperMatchesFilters(p,paperTags[p.id],filters))&&<div className="paper-filter-empty"><p>No sheets match these filters.</p><button type="button" onClick={()=>filterPapers(emptyPaperFilters())}>show all papers</button></div>}
    {draft&&receipt(draft.id,'New paper',String(papers.length+3).padStart(3,'0'),<div className="paper-notes paper-draft-body" ref={draftBody}>
     <PaperTextEditor value={draftText} onChange={setDraftText} label="New paper text" disabled={saving}/>
-    {draftPreview&&<div className="paper-reference-draft">{draftFile?.type.startsWith('video/')?<video src={draftPreview} controls playsInline aria-label="Selected reference video"/>:<img src={draftPreview} alt="Selected reference image"/>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={saving} onClick={()=>{setDraftFile(null);draftUpload.current=null}}><X size={13}/></button></div>}
+    {draftPreview&&<div className="paper-reference-draft">{draftFile?.type.startsWith('video/')?<video src={draftPreview} controls playsInline aria-label="Selected reference video"/>:<ImageViewButton url={draftPreview} title="Selected reference image"><img src={draftPreview} alt="Selected reference image"/></ImageViewButton>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={saving} onClick={()=>{setDraftFile(null);draftUpload.current=null}}><X size={13}/></button></div>}
     <div className="paper-add-actions"><button type="button" className="paper-write" title="Write a note" aria-label="Write a note" disabled={saving} onClick={()=>draftBody.current?.querySelector<HTMLElement>('[contenteditable]')?.focus()}><Plus size={14} aria-hidden="true"/></button><label className="paper-reference-add" title="Add reference image"><Camera size={14} aria-hidden="true"/><input type="file" accept={REFERENCE_IMAGE_ACCEPT} aria-label="Choose reference image" disabled={saving} onChange={e=>{chooseDraftFile(e.target.files?.[0]);e.currentTarget.value=''}}/></label><label className="paper-reference-add" title="Add a video"><Video size={14} aria-hidden="true"/><input type="file" accept={REFERENCE_VIDEO_ACCEPT} aria-label="Choose reference video" disabled={saving} onChange={e=>{chooseDraftFile(e.target.files?.[0]);e.currentTarget.value=''}}/></label></div>
    </div>,material)}
   </div></div>

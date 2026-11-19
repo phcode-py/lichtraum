@@ -2,6 +2,7 @@
 import {useCallback,useContext,useEffect,useRef,useState,type PointerEvent} from 'react';
 import type {Map as MapLibre} from 'maplibre-gl';
 import {Camera,Check,Eye,Layers,PenLine,StickyNote,Trash2,Undo2,MousePointer2} from 'lucide-react';
+import {useImageViewer} from './image-viewer';
 import {PaperReferenceUploadContext} from './paper-entries';
 import {REFERENCE_IMAGE_ACCEPT,referenceError} from '@/lib/paper-references';
 import {emptyMapTracing,parseMapTracing,type MapPoint,type MapTracing,type MapTracingLayer,type MapSketch} from '@/lib/walk-tracing';
@@ -10,10 +11,11 @@ type Drawing=Omit<MapTracing,'sketches'>&{sketches:Sketch[]};
 type Sheet={drawing:Drawing;layers:MapTracingLayer[];revision:number;loaded:boolean;available:boolean;dirty:boolean;undo:Drawing[];error:string};
 const blank=():Sheet=>({drawing:emptyMapTracing(),layers:[],revision:0,loaded:false,available:true,dirty:false,undo:[],error:''});
 export default function WalkMapTracing({map,walkId,visible,onHide}:{map:MapLibre;walkId:string|null;visible:boolean;onHide:()=>void}){
+ const openImage=useImageViewer(),sketchClick=useRef<{pointer:number;x:number;y:number;url:string}|null>(null);
  const[sheets,setSheets]=useState<Record<string,Sheet>>({}),[mode,setMode]=useState<'draw'|'note'|'sketch'|'select'>('select'),[noteText,setNoteText]=useState(''),[noteId,setNoteId]=useState<string|null>(null),[sketchId,setSketchId]=useState<string|null>(null),[busy,setBusy]=useState(false),[,redraw]=useState(0);
  const[strokeIndex,setStrokeIndex]=useState<number|null>(null),[panelPosition,setPanelPosition]=useState<{x:number;y:number}|null>(null);
  const panel=useRef<HTMLElement>(null),panelDrag=useRef<{pointer:number;x:number;y:number;left:number;top:number}|null>(null);
- const upload=useContext(PaperReferenceUploadContext),files=useRef(new Map<string,{file:File;url:string;key?:string}>()),gesture=useRef<{pointer:number;start:[number,number];drawing:Drawing;kind:'draw'|'move'|'size'|'stroke'|'point'|'note';sketch?:string;stroke?:number;vertex?:number;note?:string}|null>(null);
+ const upload=useContext(PaperReferenceUploadContext),files=useRef(new Map<string,{file:File;url:string;key?:string}>()),gesture=useRef<{pointer:number;start:[number,number];drawing:Drawing;kind:'draw'|'move'|'size'|'stroke'|'point'|'note';moved?:boolean;sketch?:string;stroke?:number;vertex?:number;note?:string}|null>(null);
  const sheet=walkId?sheets[walkId]??blank():blank(),sheetNow=useRef(sheet);sheetNow.current=sheet;
  const activeWalk=useRef(walkId);activeWalk.current=walkId;
  const drawing=sheet.drawing;
@@ -65,6 +67,7 @@ export default function WalkMapTracing({map,walkId,visible,onHide}:{map:MapLibre
    const original=active.drawing.notes.find(note=>note.id===active.note);if(!original)return;const screen=project(original.point);
    change({...current,notes:current.notes.map(note=>note.id===original.id?{...note,point:geo([screen.x+point[0]-active.start[0],screen.y+point[1]-active.start[1]])}:note)},false);
   }else{
+   if(!active.moved){if(Math.hypot(point[0]-active.start[0],point[1]-active.start[1])<4)return;active.moved=true;sketchClick.current=null;change(active.drawing)}
    const original=active.drawing.sketches.find(s=>s.id===active.sketch);if(!original)return;
    const corners=original.corners.map(project),dx=point[0]-active.start[0],dy=point[1]-active.start[1];
    let points=corners.map(p=>[p.x+dx,p.y+dy] as [number,number]);
@@ -72,13 +75,13 @@ export default function WalkMapTracing({map,walkId,visible,onHide}:{map:MapLibre
    change({...current,sketches:current.sketches.map(s=>s.id===original.id?{...s,corners:points.map(geo) as MapSketch['corners']}:s)},false);
   }
  }
- function beginSketch(event:PointerEvent<SVGElement>,kind:'move'|'size',sketch:Sketch){event.stopPropagation();if(busy)return;const svg=event.currentTarget.ownerSVGElement!;svg.setPointerCapture(event.pointerId);const rect=svg.getBoundingClientRect();gesture.current={pointer:event.pointerId,start:[event.clientX-rect.left,event.clientY-rect.top],drawing,kind,sketch:sketch.id};change(drawing);}
+ function beginSketch(event:PointerEvent<SVGElement>,kind:'move'|'size',sketch:Sketch){event.stopPropagation();if(busy)return;sketchClick.current=kind==='move'&&sketch.url?{pointer:event.pointerId,x:event.clientX,y:event.clientY,url:sketch.url}:null;const svg=event.currentTarget.ownerSVGElement!;svg.setPointerCapture(event.pointerId);const rect=svg.getBoundingClientRect();gesture.current={pointer:event.pointerId,start:[event.clientX-rect.left,event.clientY-rect.top],drawing,kind,sketch:sketch.id};}
  function beginSelection(event:PointerEvent<Element>,kind:'stroke'|'point'|'note',index:number|string,vertex?:number){
   event.stopPropagation();if(busy||mode!=='select')return;event.preventDefault();const svg=event.currentTarget.closest('svg') as SVGSVGElement|null;if(!svg)return;svg.setPointerCapture(event.pointerId);const rect=svg.getBoundingClientRect();
   if(kind==='note'){setNoteId(String(index));setNoteText(drawing.notes.find(note=>note.id===index)?.text??'');setStrokeIndex(null)}else{setStrokeIndex(Number(index));setNoteId(null)}setSketchId(null);
   gesture.current={pointer:event.pointerId,start:[event.clientX-rect.left,event.clientY-rect.top],drawing,kind,...(kind==='note'?{note:String(index)}:{stroke:Number(index),vertex})};change(drawing);
  }
- function end(){gesture.current=null}
+ function end(event:PointerEvent<SVGSVGElement>){const click=sketchClick.current;sketchClick.current=null;gesture.current=null;if(click&&event.type==='pointerup'&&event.pointerId===click.pointer&&Math.hypot(event.clientX-click.x,event.clientY-click.y)<4)openImage({url:click.url,title:'Tracing paper sketch'})}
  async function choose(file?:File,replaceId?:string){
   if(!file||!walkId||busy||!sheet.loaded)return;
   const problem=!file.type.startsWith('image/')?'Choose a JPG, PNG or WebP sketch.':referenceError(file);
@@ -102,7 +105,7 @@ export default function WalkMapTracing({map,walkId,visible,onHide}:{map:MapLibre
   <svg className={'walk-tracing-surface mode-'+mode} viewBox={`0 0 ${w} ${h}`} aria-label="Map tracing paper" onPointerDown={down} onPointerMove={move} onPointerUp={end} onPointerCancel={end}>
    <rect width={w} height={h} fill="#fffffc" opacity=".18"/>
    {layers.map(layer=><g key={layer.authorId}>
-    {layer.sketches.map(sketch=>{const [a,b,,d]=sketch.corners.map(project);return sketch.url?<image key={sketch.id} href={sketch.url} width="1" height="1" transform={`matrix(${b.x-a.x} ${b.y-a.y} ${d.x-a.x} ${d.y-a.y} ${a.x} ${a.y})`} opacity={sketch.opacity} preserveAspectRatio="none" style={{mixBlendMode:'multiply',pointerEvents:layer.mine&&(mode==='sketch'||mode==='select')?'auto':'none'}} onPointerDown={event=>{if(layer.mine){setSketchId(sketch.id);setNoteId(null);setStrokeIndex(null);setMode('sketch');beginSketch(event,'move',sketch)}}}/>:null})}
+    {layer.sketches.map(sketch=>{const [a,b,,d]=sketch.corners.map(project);return sketch.url?<image key={sketch.id} href={sketch.url} width="1" height="1" transform={`matrix(${b.x-a.x} ${b.y-a.y} ${d.x-a.x} ${d.y-a.y} ${a.x} ${a.y})`} opacity={sketch.opacity} preserveAspectRatio="none" role={mode==='sketch'||mode==='select'?'button':undefined} tabIndex={mode==='sketch'||mode==='select'?0:undefined} aria-label="Enlarge tracing paper sketch" onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();openImage({url:sketch.url!,title:'Tracing paper sketch'})}}} onClick={event=>{if(!layer.mine){event.stopPropagation();openImage({url:sketch.url!,title:'Tracing paper sketch'})}}} style={{mixBlendMode:'multiply',pointerEvents:mode==='sketch'||mode==='select'?'auto':'none'}} onPointerDown={event=>{event.stopPropagation();if(layer.mine){setSketchId(sketch.id);setNoteId(null);setStrokeIndex(null);setMode('sketch');beginSketch(event,'move',sketch)}}}/>:null})}
     {layer.strokes.map((stroke,index)=>{const path=stroke.points.map((point,i)=>{const p=project(point);return `${i?'L':'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`}).join(' ')+(stroke.points.length===1?' l.1,0':'');return <g key={index}><path d={path} fill="none" stroke="#2446e8" strokeWidth={layer.mine&&mode==='select'&&strokeIndex===index?3.5:2.5} strokeLinecap="round" strokeLinejoin="round"/>{layer.mine&&mode==='select'&&<path className="map-stroke-hit" aria-label={'Move drawing '+(index+1)} d={path} fill="none" stroke="transparent" strokeWidth="14" style={{pointerEvents:'stroke'}} onPointerDown={event=>beginSelection(event,'stroke',index)}/>}</g>})}
     {layer.notes.map(note=>{const p=project(note.point);return <foreignObject key={note.id} x={p.x} y={p.y} width="160" height="95" style={{overflow:'visible',pointerEvents:layer.mine&&mode==='select'?'auto':'none'}}><button type="button" className="map-tracing-note" disabled={!layer.mine||busy} onPointerDown={event=>{if(mode==='select')beginSelection(event,'note',note.id);else event.stopPropagation()}} onClick={()=>{if(layer.mine&&mode==='select'){setNoteId(note.id);setNoteText(note.text)}}}>{note.text}</button></foreignObject>})}
    </g>)}

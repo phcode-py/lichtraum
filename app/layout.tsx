@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import ImageViewerProvider from '@/components/image-viewer';
 
 export const metadata: Metadata = {
   title: 'lichtraum zürich — atlas',
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#f5f3ed' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><body>{children}</body></html>;
+  return <html lang="en" suppressHydrationWarning><body><ImageViewerProvider>{children}</ImageViewerProvider></body></html>;
 }

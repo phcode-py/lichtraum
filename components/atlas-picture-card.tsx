@@ -5,17 +5,20 @@ import AtlasMedia from './atlas-media';
 import PhotoTracing from './photo-tracing';
 import type {GalleryPhoto} from '@/lib/gallery';
 import PhotoInformation from './photo-information';
+import {useImageViewer} from './image-viewer';
 
 /** The atlas stays image-first; recorded information unfolds only on request. */
 export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemove}:{photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void}){
+ const openImage=useImageViewer();
  const[tracing,setTracing]=useState(false),[playing,setPlaying]=useState(false);
  const detailsId='atlas-info-'+photo.id;
  const label=photo.title.trim()||'Untitled photograph';
+ function view(){if(photo.mediaType==='video')onToggle();else openImage({url:photo.url,title:label})}
  return <article className={'atlas-picture-card'+(expanded?' info-open':'')+(tracing||playing?' media-active':'')}>
   <div className="atlas-picture-surface">
-   {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video" controls/>:tracing?<PhotoTracing photo={photo}/>:<button type="button" className="atlas-picture-toggle" aria-label={'Photograph information for '+label} aria-controls={detailsId} onClick={onToggle}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType}/></button>}
+   {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video" controls/>:tracing?<PhotoTracing photo={photo}/>:<button type="button" className="atlas-picture-toggle" aria-label={(photo.mediaType==='video'?'Photograph information for ':'Enlarge ')+label} aria-controls={photo.mediaType==='video'?detailsId:undefined} onClick={view}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType}/></button>}
 
-  {!tracing&&!playing&&<section id={detailsId} className="atlas-picture-info" aria-label="Photograph information" onClick={event=>{if(!(event.target as HTMLElement).closest('button,a'))onToggle()}}>
+  {!tracing&&!playing&&<section id={detailsId} className="atlas-picture-info" aria-label="Photograph information" onClick={event=>{if(!(event.target as HTMLElement).closest('button,a'))view()}}>
    <PhotoInformation photo={photo}/>
    <div className="atlas-picture-actions">{photo.mediaType==='video'&&<button type="button" aria-label="Play video" onClick={()=>{setPlaying(true);onToggle()}}><Play size={13}/></button>}{photo.mediaType!=='video'&&<button type="button" aria-label="Trace photograph" aria-pressed={tracing} onClick={()=>{setTracing(true);onToggle()}}><PenLine size={13}/></button>}{onEdit&&<button type="button" aria-label={'Edit '+label} onClick={onEdit}><Pencil size={12}/></button>}{onRemove&&<button type="button" aria-label={'Remove '+label} onClick={onRemove}><Trash2 size={12}/></button>}{photo.source&&<a href={photo.source} target="_blank" rel="noreferrer">Source ↗</a>}</div>
   </section>}

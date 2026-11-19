@@ -1,12 +1,15 @@
 import Link from 'next/link';
+import SignInBackdrop from './backdrop';
 import './signin.css';
 
 /** Paper sheet used by the sign-in and password pages. */
 export default function SignInShell({index, children}:{index:string;children:React.ReactNode}){
  return <main className="signin">
-  <header className="topbar"><Link href="/" className="brand" aria-label="lichtraum zürich home"><span className="brand-name">lichtraum zürich<span className="brand-sub">WALKS / REFLECTIONS / TOGETHER</span></span></Link></header>
-  <section className="signin-sheet">
-   <div className="signin-index"><span>{index}</span><span>47.3769° N · 8.5417° E</span></div>
+  <SignInBackdrop/>
+  <header className="signin-header"><Link href="/" className="signin-brand" aria-label="Lichtraum Zürich — starting page"><span>LICHTRAUM</span><span>ZÜRICH</span></Link></header>
+  <span className="signin-side-label" aria-hidden="true">04 account</span>
+  <section className="signin-sheet" aria-label={index==='ATLAS / PASSWORD'?'Choose your password':'Account access'}>
+   <div className="signin-tapes" aria-hidden="true"><span/><span/><span/><span/></div>
    {children}
   </section>
  </main>;
