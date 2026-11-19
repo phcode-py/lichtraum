@@ -45,7 +45,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
  }
 
  return <div className="walk-journal">
-  <h1>Reflective walks</h1>
+  <h1 className="section-display">Reflective walks</h1>
   <div className="walk-entry-options"><button className="primary walk-start-inline" onClick={onStart}><span className="walk-ring" aria-hidden="true"/>Start walk</button><button className="walk-past-button" onClick={()=>setAddingPast(true)}><span className="walk-ring walk-ring-filled" aria-hidden="true"/>Add a past walk</button></div>
   {momentForm}
   {addingPast&&<WalkEditor routeDraft={routeDraft} onRouteChange={onRouteChange} onClose={()=>setAddingPast(false)} onSaved={onCreated}/>}

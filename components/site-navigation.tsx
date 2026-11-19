@@ -9,7 +9,7 @@ const sections=[
  {id:'account',label:'Account'},
 ];
 
-export default function SiteNavigation({active,onOpen,onNavigate}:{active:string;onOpen:()=>void;onNavigate:(section:string)=>void}){
+export default function SiteNavigation({active,onOpen,onNavigate,onHome}:{active:string;onOpen:()=>void;onNavigate:(section:string)=>void;onHome:()=>void}){
  const[open,setOpen]=useState(false),[preview,setPreview]=useState<string|null>(null);
  const container=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null);
  const current=(active==='mine'||active==='gallery')?'explore':active;
@@ -33,7 +33,7 @@ export default function SiteNavigation({active,onOpen,onNavigate}:{active:string
  return <div className="site-navigation" ref={container}>
   <button ref={trigger} className="navigation-trigger" aria-label="Menu" aria-expanded={open} aria-controls="site-sections" onClick={()=>{if(!open){onOpen();setPreview(null)}setOpen(value=>!value)}}><svg viewBox="0 0 36 28" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path className="navigation-line navigation-line-top" d="M2 9h32"/><path className="navigation-line navigation-line-bottom" d="M2 19h32"/></svg></button>
   <nav id="site-sections" className="navigation-sheet" data-open={open} aria-hidden={!open} inert={!open} aria-label="Main navigation">
-   <div className="navigation-heading" aria-label="Lichtraum Zürich"><span>LICHTRAUM</span><span>ZÜRICH</span></div>
+   <button type="button" className="navigation-heading" aria-label="Lichtraum Zürich — starting page" onClick={()=>{onHome();setOpen(false);setPreview(null);trigger.current?.focus()}}><span>LICHTRAUM</span><span>ZÜRICH</span></button>
    <div className="navigation-content">
     <div className="navigation-links">{sections.map(section=><button key={section.id} className={highlighted===section.id?'is-highlighted':''} aria-current={current===section.id?'page':undefined} onPointerEnter={()=>setPreview(section.id)} onPointerLeave={()=>setPreview(null)} onFocus={()=>setPreview(section.id)} onBlur={()=>setPreview(null)} onClick={()=>{onNavigate(section.id);setOpen(false);trigger.current?.focus()}}>{section.label}</button>)}</div>
    </div>
