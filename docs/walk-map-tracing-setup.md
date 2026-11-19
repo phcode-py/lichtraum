@@ -1,0 +1,9 @@
+# Map tracing paper — setup for Philipp
+
+The walk's “Tracing paper” row opens a geographic drawing layer. Participants can draw their own blue lines, place/edit short notes, upload up to three still-image sketches, align them by moving/resizing/rotating, replace a sketch image without losing its placement, change opacity, and hide/show the layer. The blue tape drags the controls paper (arrow keys work when it is focused). The selection tool moves existing lines and notes, exposes line handles for reshaping, and lets you remove a selected line. Notes can be rewritten or removed. Undo restores draft changes. Map coordinates keep the work aligned when panning and zooming. Unsaved work stays in memory while moving between walks in the same page; Save commits the personal layer. Browser reloads require saving first.
+
+The prepared `20261119000000_walk_map_tracings.sql` needs Philipp's review and separate application before online saving works. It creates a new companion table, validation functions and access policies; no existing walks, notes, images or bucket settings are rewritten. It reuses the existing private `paper-references` bucket. This requires the earlier paper-reference setup.
+
+**Risky permission addition to review:** authenticated people who can see a walk can read the sketch files referenced by its tracing layers. Private-walk visibility remains controlled by the existing walk policies. Each participant writes only their own layer; the API checks identity, revision, file ownership, MIME type, size and geometry bounds. Sketch files are retained if detached or if a save fails. No DELETE or overwrite permissions are introduced.
+
+This migration has NOT been applied by the coding agent, and no notification has been sent outside this workspace. Coordinate with Philipp before any hosted database or deployment action. Code upload approval is separate from database approval.

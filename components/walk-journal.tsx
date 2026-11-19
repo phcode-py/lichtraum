@@ -1,5 +1,5 @@
 'use client';
-import {ArrowLeft,ArrowUpRight,Play,Plus} from 'lucide-react';
+import {ArrowLeft,ArrowUpRight,Play,Plus,Layers,Eye} from 'lucide-react';
 import {type ReactNode,useState} from 'react';
 import type {WalkRouteDraft} from '@/lib/walk-route';
 import PhotoEdit from './photo-edit';
@@ -15,7 +15,7 @@ const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',mont
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
-export default function WalkJournal({filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
+export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{tracingVisible:boolean;onTracingToggle:()=>void;filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
  const [editingMoment,setEditingMoment]=useState<string|null>(null),[revealedMoment,setRevealedMoment]=useState<string|null>(null);
  const [addingPast,setAddingPast]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
@@ -34,7 +34,7 @@ export default function WalkJournal({filmstripOpen,onFilmstrip,routeDraft,onRout
    {walk.mine&&walk.status!=='ended'&&<button className="primary walk-continue" onClick={()=>onContinue(walk)}>Continue this walk <ArrowUpRight size={14}/></button>}
    {!walk.path.length&&walk.status==='ended'&&<p className="walk-route-note">No GPS route recorded. The moments still belong here.</p>}
    <div className="walk-moment-actions">{walk.mine&&<button className="walk-add-moment" onClick={()=>onAddMoment(walk)}><Plus size={14} strokeWidth={3} aria-hidden="true"/><span>Add a photo or video</span></button>}
-   {!!pins.length&&<button className="walk-filmstrip-toggle" aria-expanded={filmstripOpen} onClick={onFilmstrip}><Play size={14} fill="currentColor" aria-hidden="true"/><span>Filmstrip</span></button>}</div>
+   {!!pins.length&&<button className="walk-filmstrip-toggle" aria-expanded={filmstripOpen} onClick={onFilmstrip}><Play size={14} fill="currentColor" aria-hidden="true"/><span>Filmstrip</span></button>}<button type="button" className="walk-tracing-toggle" aria-pressed={tracingVisible} onClick={onTracingToggle}><Layers size={14}/><span>Tracing paper</span>{tracingVisible&&<Eye size={13}/>}</button></div>
    </>}
    {momentForm}
    <section className="walk-stops">
