@@ -7,7 +7,7 @@ import {AREAS,IMAGE_TYPES,TIMES,WEATHER,emptyFilters,filterGallery,type GalleryF
 import type {Walk} from '@/lib/walks';
 
 export default function PhotoGallery({photos,walks,loading,localPreview,onSelect,onLocalFiles,onAdd,error='',onRetry,onMapView}:{onMapView:()=>void;error?:string;onRetry:()=>void;photos:GalleryPhoto[];walks:Walk[];loading:boolean;localPreview:boolean;onSelect:(p:GalleryPhoto,mode?:'edit'|'trace')=>void;onLocalFiles:(files:File[])=>void;onAdd:()=>void}){
- const[filters,setFilters]=useState<GalleryFilters>(emptyFilters),[sort,setSort]=useState<GallerySort>('uploaded-newest'),[filterOpen,setFilterOpen]=useState(true),[limit,setLimit]=useState(48);
+ const[filters,setFilters]=useState<GalleryFilters>(emptyFilters),[sort,setSort]=useState<GallerySort>('uploaded-newest'),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(48);
  // Only walks still saved in the Walks section count; a picture from a removed walk counts as not attached.
  const results=useMemo(()=>{const saved=new Set(walks.map(w=>w.id));return filterGallery(photos.map(p=>p.walk&&!saved.has(p.walk)?{...p,walk:''}:p),filters,sort)},[photos,walks,filters,sort]);
  const set=(next:GalleryFilters)=>{setFilters(next);setLimit(48)};
