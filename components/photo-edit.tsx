@@ -75,7 +75,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
    <input type="file" aria-label="Change photo or video" accept={MEDIA_ACCEPT} disabled={busy} onChange={e=>choose(e.target.files?.[0])}/>
   </label></div>
   <fieldset className="detail-body photo-edit-fields" disabled={busy}>
-   <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label>
+   <label className="field field-title">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label>
    {located&&<>
     <div className="field location-field">Exact spot<p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p></div>
     <label className="field">Kreis or square<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);setAutoPlace('');setPlace(p?p.name:photo.place??'')}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Choose a Kreis or square'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>

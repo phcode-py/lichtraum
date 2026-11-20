@@ -1188,3 +1188,36 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .photo-edit .upload-tag-options .tag-choice-list small{font-size:8px}
 .photo-edit .upload-tag-options select{font:10px 'Courier New',Courier,monospace;border:0;border-bottom:1px solid #e3e3dc;background:transparent;padding:4px 0;width:100%;color:#4f4f44}
 .location-field .pin-status{margin-top:6px}
+
+/* Adding and editing a photograph read like the photograph's own information card:
+   quiet typewriter titles, values set as text on a fine rule, no filled boxes. */
+.workspace :is(.upload-panel,.photo-edit) .field{font:400 9px/1.6 'Courier New',Courier,monospace;color:#77776a;margin-top:18px}
+.workspace :is(.upload-panel,.photo-edit) .field>span{color:#a2a296}
+.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea){display:block;width:100%;margin-top:2px;padding:7px 0 8px;background:transparent;border:0;border-bottom:1px solid #e4e4dc;border-radius:0;box-shadow:none;font:400 13px/1.45 var(--font-interface);color:var(--ink);transition:border-color .15s}
+.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea)::placeholder{color:#b4b4a8}
+.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea):hover{border-bottom-color:#c9c9bd}
+.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea):focus{outline:0;border-bottom-color:var(--blue)}
+.workspace :is(.upload-panel,.photo-edit) .field select{appearance:none;-webkit-appearance:none;padding-right:18px;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%232446e8' stroke-width='1.4'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 2px center;cursor:pointer}
+.workspace :is(.upload-panel,.photo-edit) .field textarea{resize:vertical;min-height:58px}
+/* The title is set like the heading it becomes. */
+.workspace :is(.upload-panel,.photo-edit) .field-title input{font:600 20px/1.2 var(--font-display);letter-spacing:-.5px}
+.workspace :is(.upload-panel,.photo-edit) .capture-conditions{border:0;margin:0;padding:0}
+.workspace :is(.upload-panel,.photo-edit) .capture-conditions input[type=datetime-local]{font-variant-numeric:tabular-nums}
+.workspace :is(.upload-panel,.photo-edit) .pin-status{font:400 9px/1.6 'Courier New',Courier,monospace;color:#8b8b81;margin:6px 0 0}
+.workspace .upload-panel .dropzone{background:transparent;border:1px dashed #c9c9bd;height:120px}
+.workspace .upload-panel .dropzone strong{font-size:12px;font-weight:500;color:var(--ink)}
+.workspace .upload-panel .dropzone:hover{border-color:var(--blue)}
+.workspace .upload-panel .dropzone:hover>svg{color:var(--blue)}
+/* Tags open like the other titles, with a quiet blue plus instead of the browser triangle. */
+.workspace .upload-panel .upload-tag-options{margin:18px 0 0;border:0;padding:0}
+.workspace .upload-panel .upload-tag-options>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font:400 9px/1.6 'Courier New',Courier,monospace;color:#77776a;padding:4px 2px 8px 0;border-bottom:1px solid #e4e4dc}
+.workspace .upload-panel .upload-tag-options>summary::-webkit-details-marker{display:none}
+.workspace .upload-panel .upload-tag-options>summary::after{content:"+";font-size:12px;color:var(--blue);line-height:1}
+.workspace .upload-panel .upload-tag-options[open]>summary::after{content:"−"}
+.workspace .upload-panel .upload-tag-options .photo-tag-fields fieldset{margin:14px 0 6px}
+.workspace .upload-panel .upload-tag-options .photo-tag-fields legend{font:400 9px/1.6 'Courier New',Courier,monospace;color:#949489;margin-bottom:10px}
+.workspace .upload-panel .upload-tag-options .tag-choice-list>label{font-size:11px;margin-bottom:8px;color:#4f4f44}
+.workspace .upload-panel .upload-tag-options select{font:12px var(--font-interface);border:0;border-bottom:1px solid #e4e4dc;background:transparent;padding:6px 0;width:100%;color:#4f4f44}
+.workspace .photo-edit .upload-tag-options>summary{border-bottom:1px solid #e4e4dc;padding-bottom:8px}
+.workspace :is(.upload-panel,.photo-edit) .share-photo{font-size:11px;margin-top:20px}
+@media(max-width:720px){.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea){font-size:16px}.workspace :is(.upload-panel,.photo-edit) .field-title input{font-size:21px}}
