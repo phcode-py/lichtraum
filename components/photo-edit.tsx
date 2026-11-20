@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight,Camera,Check,MapPin} from 'lucide-react';
 import {createClient} from '@/lib/supabase/client';
 import {MEDIA_ACCEPT,mediaError,uploadMedia} from '@/lib/media';
-import {districts,places,squares} from '@/lib/places';
+import {districts,nearestPlace,places,squares} from '@/lib/places';
 import {emptyTags,type PhotoTags} from '@/lib/gallery';
 import type {PhotoConditions} from '@/lib/photo-conditions';
 import {parseZurichDateTime,zurichDateTime} from '@/lib/sun';
@@ -34,8 +34,10 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
  // A pin dropped on the big map becomes this photograph's new place.
  const pinned=pin?.point;
+ // The pin and the Kreis or square are separate: a dropped pin only suggests a place until one is chosen by hand.
+ const[autoPlace,setAutoPlace]=useState('');
  const[seenPin,setSeenPin]=useState(pinned);
- if(pinned!==seenPin){setSeenPin(pinned);if(pinned){setPoint(pinned);setPlace('Dropped pin')}}
+ if(pinned!==seenPin){setSeenPin(pinned);if(pinned){setPoint(pinned);if(!places.some(x=>x.name===place)||place===autoPlace){const suggested=nearestPlace(pinned.lat,pinned.lng);setAutoPlace(suggested);setPlace(suggested)}}}
  const stopPicking=useRef(pin?.onStop);
  useEffect(()=>{stopPicking.current=pin?.onStop},[pin?.onStop]);
  useEffect(()=>()=>stopPicking.current?.(),[]);
@@ -75,8 +77,8 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
   <fieldset className="detail-body photo-edit-fields" disabled={busy}>
    <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label>
    {located&&<>
-    <label className="field">Where was it?<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);if(p){setPoint({lat:p.lat,lng:p.lng});setPlace(p.name)}}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Pin, click on map'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>
-    <p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p>
+    <div className="field location-field">Exact spot<p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p></div>
+    <label className="field">Kreis or square<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);setAutoPlace('');setPlace(p?p.name:photo.place??'')}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Choose a Kreis or square'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>
     {time?<CaptureConditions time={time} onTime={setTime} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
    </>}
    {walks&&<label className="field">Walk <span>(optional)</span><select value={walk} onChange={e=>setWalk(e.target.value)}><option value="">No specific walk</option>{walkChoices.map(w=><option key={w.id} value={w.id}>{w.title||'Untitled walk'}</option>)}</select></label>}

@@ -1000,18 +1000,18 @@ main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{displa
 .gallery-workspace>.walk-panel-tapes>span:first-child{left:10%}
 .gallery-workspace>.walk-panel-tapes>span:last-child{right:10%;height:61px}
 @property --tape-peel{syntax:'<percentage>';inherits:true;initial-value:0%}
-.walk-panel-tapes>span{--tape-angle:-6deg;--tape-peel:0%;transform-origin:50% 100%;background:transparent;clip-path:none;perspective:220px;overflow:visible}
-.walk-panel-tapes>span:last-child{--tape-angle:5deg}
+.walk-panel-tapes>span{--tape-angle:-6deg;--tape-turn:-1;--tape-peel:0%;transform-origin:50% 100%;background:transparent;clip-path:none;perspective:220px;overflow:visible}
+.walk-panel-tapes>span:last-child{--tape-angle:5deg;--tape-turn:1}
 .tape-face,.tape-fold{position:absolute;display:block;left:0;width:100%;pointer-events:none;clip-path:polygon(1% 2%,100% 0,98% 98%,0 100%)}
 .tape-face{inset:0;background:var(--blue);clip-path:inset(var(--tape-peel) 0 0 0)}
 .tape-fold{top:var(--tape-peel);height:var(--tape-peel);transform-origin:50% 0;transform:rotateX(152deg);background:var(--blue);box-shadow:0 -3px 5px #17215a28;backface-visibility:visible}
-.atlas-tapes-peeling>.walk-panel-tapes>span{animation:atlas-sticker-peel 760ms cubic-bezier(.35,.1,.55,1) both}
+.atlas-tapes-peeling>.walk-panel-tapes>span{animation:atlas-sticker-peel 700ms cubic-bezier(.5,0,.75,.4) both}
 .atlas-tapes-peeling>.walk-panel-tapes>span:last-child{animation-delay:80ms}
-.atlas-tapes-sticking>.walk-panel-tapes>span{animation:atlas-sticker-stick 620ms cubic-bezier(.2,.65,.3,1) 120ms both}
+.atlas-tapes-sticking>.walk-panel-tapes>span{animation:atlas-sticker-stick 640ms cubic-bezier(.25,.8,.35,1) 120ms both}
 .atlas-tapes-sticking>.walk-panel-tapes>span:last-child{animation-delay:200ms}
 .atlas-tapes-sticking>.sidebar{animation:atlas-sheet-settle 380ms cubic-bezier(.2,.7,.3,1) both}
-@keyframes atlas-sticker-peel{0%{--tape-peel:0%;opacity:.94;transform:translateY(0) rotate(var(--tape-angle))}12%{--tape-peel:5%;opacity:.94;transform:translateY(0) rotate(var(--tape-angle))}78%{--tape-peel:92%;opacity:.94;transform:translateY(0) rotate(var(--tape-angle))}90%{--tape-peel:100%;opacity:.94;transform:translateY(-3px) rotate(calc(var(--tape-angle) - 3deg))}100%{--tape-peel:100%;opacity:0;transform:translateY(-24px) rotate(calc(var(--tape-angle) - 9deg))}}
-@keyframes atlas-sticker-stick{0%{--tape-peel:100%;opacity:0;transform:translateY(-10px) rotate(calc(var(--tape-angle) + 5deg))}18%{--tape-peel:96%;opacity:.94;transform:translateY(0) rotate(var(--tape-angle))}100%{--tape-peel:0%;opacity:.94;transform:translateY(0) rotate(var(--tape-angle))}}
+@keyframes atlas-sticker-peel{0%{--tape-peel:0%;opacity:.94;transform:translate(0,0) rotate(var(--tape-angle)) scale(1)}22%{--tape-peel:0%;opacity:.94;transform:translate(0,1px) rotate(var(--tape-angle)) scale(1.03)}100%{--tape-peel:0%;opacity:0;transform:translate(calc(var(--tape-turn) * 26px),-78px) rotate(calc(var(--tape-angle) + var(--tape-turn) * 16deg)) scale(1.08)}}
+@keyframes atlas-sticker-stick{0%{--tape-peel:0%;opacity:0;transform:translate(calc(var(--tape-turn) * 22px),-64px) rotate(calc(var(--tape-angle) + var(--tape-turn) * 14deg)) scale(1.08)}58%{--tape-peel:0%;opacity:.94;transform:translate(0,2px) rotate(var(--tape-angle)) scale(1.02)}76%{--tape-peel:0%;opacity:.94;transform:translate(0,0) rotate(var(--tape-angle)) scale(.97,1.03)}100%{--tape-peel:0%;opacity:.94;transform:translate(0,0) rotate(var(--tape-angle)) scale(1)}}
 @keyframes atlas-sheet-settle{from{opacity:.4;transform:translateY(8px) scale(.988);transform-origin:top left}to{opacity:1;transform:translateY(0) scale(1);transform-origin:top left}}
 @media(max-width:720px){.gallery-workspace>.walk-panel-tapes{left:16px;right:16px;top:86px}.gallery-workspace>.walk-panel-tapes>span:first-child{left:12%}.gallery-workspace>.walk-panel-tapes>span:last-child{right:12%}}
 @media(prefers-reduced-motion:reduce){.atlas-tapes-peeling>.walk-panel-tapes>span,.atlas-tapes-sticking>.walk-panel-tapes>span,.atlas-tapes-sticking>.sidebar{animation:none}}
@@ -1187,3 +1187,4 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .photo-edit .upload-tag-options .tag-choice-list>label{font-size:10px;margin-bottom:8px;color:#4f4f44}
 .photo-edit .upload-tag-options .tag-choice-list small{font-size:8px}
 .photo-edit .upload-tag-options select{font:10px 'Courier New',Courier,monospace;border:0;border-bottom:1px solid #e3e3dc;background:transparent;padding:4px 0;width:100%;color:#4f4f44}
+.location-field .pin-status{margin-top:6px}
