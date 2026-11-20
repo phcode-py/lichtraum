@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {Sun} from 'lucide-react';
 import {parseZurichDateTime,solarPosition,sunDirection,zurichDateTime} from '@/lib/sun';
 import {WeatherReadout} from './photo-conditions';
 import type {WeatherSnapshot} from '@/lib/photo-conditions';
@@ -15,5 +16,5 @@ export default function CaptureConditions({time,onTime,point,localPreview=false}
   const timer=setTimeout(()=>{fetch(`/api/weather?time=${instant}&lat=${point.lat}&lng=${point.lng}`,{signal:controller.signal}).then(r=>r.ok?r.json():null).then(data=>setResult({key,weather:data?.weather??null})).catch(()=>{if(!controller.signal.aborted)setResult({key,weather:null})});},350);
   return()=>{clearTimeout(timer);controller.abort()};
  },[key,instant,point,localPreview]);
- return <section className="capture-conditions"><label className="field">When was it taken?<input type="datetime-local" required min="1940-01-01T00:00" max={latest} value={time} step="60" onChange={e=>onTime(e.target.value)}/></label>{instant===null?<p className="form-error">Choose a valid Zürich date and time.</p>:sun?<><p className="capture-sun">☀ {Math.round(sun.azimuth)}° {sunDirection(sun.azimuth)} direction · {Math.round(sun.elevation)}° elevation</p>{localPreview?<p className="conditions-note">Weather needs the project connection settings.</p>:result?.key===key?result.weather?<WeatherReadout weather={result.weather}/>:null:<p className="conditions-note" role="status">Finding the weather for this moment…</p>}{localPreview&&<p className="conditions-note">Preview only. No photograph or weather record will be saved.</p>}</>:null}</section>;
+ return <section className="capture-conditions"><label className="field">When was it taken?<input type="datetime-local" required min="1940-01-01T00:00" max={latest} value={time} step="60" onChange={e=>onTime(e.target.value)}/></label>{instant===null?<p className="form-error">Choose a valid Zürich date and time.</p>:sun?<><p className="capture-sun"><Sun size={13} aria-hidden="true"/> {Math.round(sun.azimuth)}° {sunDirection(sun.azimuth)} direction · {Math.round(sun.elevation)}° elevation</p>{localPreview?<p className="conditions-note">Weather needs the project connection settings.</p>:result?.key===key?result.weather?<WeatherReadout weather={result.weather}/>:null:<p className="conditions-note" role="status">Finding the weather for this moment…</p>}{localPreview&&<p className="conditions-note">Preview only. No photograph or weather record will be saved.</p>}</>:null}</section>;
 }
