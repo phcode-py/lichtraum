@@ -101,7 +101,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
     <button type="button" onClick={onCancel}>Cancel</button>
     <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?'Saving…':'Save changes'}<ArrowUpRight size={14}/></button>
    </div>
-   {onDeleted&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" onClick={()=>setConfirmDelete(true)}><Trash2 size={13} aria-hidden="true"/>Delete picture</button>}</div>}
+   {onDeleted&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" className="delete-icon" aria-label="Delete picture" title="Delete picture" onClick={()=>setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true"/></button>}</div>}
   </fieldset>
  </form>;
 }
