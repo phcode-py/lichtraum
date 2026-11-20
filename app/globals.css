@@ -1221,3 +1221,23 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .workspace .photo-edit .upload-tag-options>summary{border-bottom:1px solid #e4e4dc;padding-bottom:8px}
 .workspace :is(.upload-panel,.photo-edit) .share-photo{font-size:11px;margin-top:20px}
 @media(max-width:720px){.workspace :is(.upload-panel,.photo-edit) .field :is(input,select,textarea){font-size:16px}.workspace :is(.upload-panel,.photo-edit) .field-title input{font-size:21px}}
+
+/* Date and time chosen on scrolling wheels */
+.dt-picker{margin-top:2px}
+.dt-display{display:flex;align-items:center;justify-content:space-between;width:100%;padding:7px 0 8px;border:0;border-bottom:1px solid #e4e4dc;background:none;font:400 13px/1.45 var(--font-interface);color:var(--ink);text-align:left;font-variant-numeric:tabular-nums;cursor:pointer}
+.dt-display svg{color:var(--blue);transition:transform .2s}
+.dt-display[aria-expanded=true]{border-bottom-color:var(--blue)}
+.dt-display[aria-expanded=true] svg{transform:rotate(180deg)}
+.dt-panel{margin-top:10px}
+.dt-wheels{position:relative;display:grid;grid-template-columns:.8fr 1.1fr 1.15fr 6px .8fr 8px .8fr;height:160px;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
+.dt-wheels::before{content:"";position:absolute;left:0;right:0;top:64px;height:32px;border-top:1px solid #dcdcd2;border-bottom:1px solid #dcdcd2;pointer-events:none}
+.dt-wheel{height:160px;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none;text-align:center;font:400 14px/32px var(--font-interface);color:#b2b2a6;font-variant-numeric:tabular-nums;cursor:ns-resize}
+.dt-wheel::-webkit-scrollbar{display:none}
+.dt-wheel:focus-visible{outline:1px solid var(--blue);outline-offset:-1px}
+.dt-wheel>div{height:32px;scroll-snap-align:center;transition:color .15s}
+.dt-wheel>.dt-wheel-pad{height:64px;scroll-snap-align:none}
+.dt-wheel>.is-chosen{color:var(--blue);font-weight:600}
+.dt-colon{align-self:center;text-align:center;color:var(--blue);font-weight:600}
+.dt-actions{display:flex;justify-content:space-between;margin-top:8px}
+.dt-actions button{font:400 9px/1.6 'Courier New',Courier,monospace;color:var(--blue);text-decoration:underline;text-underline-offset:3px;padding:6px 0}
+@media(max-width:720px){.dt-display{font-size:16px}.dt-wheel{font-size:16px}}
