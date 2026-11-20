@@ -1290,3 +1290,30 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .gallery-lightbox-notes .weather-grid dt{font:400 8px/1.6 'Courier New',Courier,monospace;color:#a2a296;margin:0 0 2px}
 .gallery-lightbox-notes .weather-grid dd{font:400 12px/1.4 var(--font-interface);color:#3e3e36;letter-spacing:0}
 .gallery-lightbox-notes .sun-location-button{font:400 10px/1.6 'Courier New',Courier,monospace;color:var(--blue);border:0;padding:12px 0 0}
+
+/* Gallery: search, filters, sorting and the count sit in the side list under Add a photograph and View as map. */
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle){display:flex;align-items:center;gap:8px;min-height:24px;margin:0;padding:0;color:var(--blue);font-size:14px;line-height:20px;background:none;border:0}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle)>svg{width:14px;height:14px;flex-shrink:0}
+.gallery-side-search input,.gallery-side-sort select{font:inherit;color:var(--blue);background:transparent;border:0;border-bottom:1px solid transparent;padding:0;min-width:0;width:150px;outline:0}
+.gallery-side-search input::placeholder{color:var(--blue);opacity:1}
+.gallery-side-search input:focus,.gallery-side-search input:not(:placeholder-shown){border-bottom-color:#c9d1f7;color:var(--ink)}
+.gallery-side-sort select{appearance:none;-webkit-appearance:none;width:auto;cursor:pointer}
+.gallery-entry-options>.gallery-count{font-size:10px;color:#929889;margin-top:6px}
+/* The title sits at the top beside the side list; search, filters and sorting are quiet dark grey. */
+.photo-gallery .gallery-heading{align-items:flex-start}
+.photo-gallery .gallery-heading .section-display{margin-top:0}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle){color:#4f4f46}
+.gallery-side-search input,.gallery-side-sort select{color:#4f4f46}
+.gallery-side-search input::placeholder{color:#4f4f46}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle):hover{color:var(--ink)}
+@media(min-width:721px){.photo-gallery .gallery-heading{padding-bottom:28px}}
+/* Like the map view: a pause after the blue links, then quieter grey tools. */
+.gallery-entry-options>.gallery-side-search{margin-top:26px}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle){font-size:13px;color:#8b8b81;gap:12px}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle)>svg{width:16px;height:16px;color:#77776a}
+.gallery-side-search input,.gallery-side-sort select{font-size:13px;color:#77776a}
+.gallery-side-search input::placeholder{color:#8b8b81}
+.gallery-side-search input:focus,.gallery-side-search input:not(:placeholder-shown){color:var(--ink);border-bottom-color:#dcdcd2}
+.gallery-entry-options>:is(.gallery-side-search,.gallery-side-sort,.gallery-filter-toggle):hover{color:#4f4f46}
+.gallery-entry-options>.gallery-side-search{margin-top:14px}
+.photo-gallery .gallery-heading .section-display{margin-top:14px}
