@@ -12,7 +12,7 @@ import PhotoTracing,{type PhotoTracingHandle} from './photo-tracing';
 import CaptureConditions from './capture-conditions';
 import {TagChoices} from './photo-tags';
 
-type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags};
+type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;createdAt?:number};
 type Point={lat:number;lng:number};
 export type EditWalk={id:string;title:string;mine?:boolean;canEdit?:boolean};
 /** Lets the edit form borrow the big map for moving the pin. */
@@ -27,7 +27,8 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
  const[title,setTitle]=useState(photo.title),[caption,setCaption]=useState(photo.caption),[shared,setShared]=useState(!!photo.shared);
  const located=typeof photo.lat==='number'&&typeof photo.lng==='number';
  const[place,setPlace]=useState(photo.place??''),[point,setPoint]=useState<Point|null>(located?{lat:photo.lat!,lng:photo.lng!}:null);
- const initialTime=photo.conditions?zurichDateTime(photo.conditions.capturedAt):'';
+ // The date the picture already shows: when it was taken, or else when it was added. It is only saved if changed.
+ const initialTime=photo.conditions?zurichDateTime(photo.conditions.capturedAt):photo.createdAt?zurichDateTime(photo.createdAt):'';
  const[time,setTime]=useState(initialTime);
  const[walk,setWalk]=useState(photo.walk??''),[tags,setTags]=useState<PhotoTags>(photo.tags??emptyTags());
  const[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -53,7 +54,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
   try{
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
    if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file);}
-   const timeChanged=capturedAt!==null&&(time!==initialTime||moved);
+   const timeChanged=capturedAt!==null&&(time!==initialTime||(moved&&!!photo.conditions));
    const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(timeChanged?{capturedAt}:{})};
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'Your changes could not be saved.');
