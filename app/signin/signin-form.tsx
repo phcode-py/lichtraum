@@ -51,9 +51,9 @@ export default function SignInForm({linkError}:{linkError:boolean}){
    <button role="tab" aria-selected={mode==='signup'} className={mode==='signup'?'active':''} onClick={()=>switchTo('signup')}>New account</button>
   </div>
   <form onSubmit={submit}>
-   <h1>{mode==='signup'?<>Join the<br/>light atlas.</>:<>Enter the<br/>light atlas.</>}</h1>
+   <h1>{mode==='signup'?<>JOIN THE<br/>LIGHT ATLAS</>:<>ENTER THE<br/>LIGHT ATLAS</>}</h1>
    <p className="signin-lede">{mode==='link'?'We email you a one-time link. Afterwards you can set a password.':'Lichtraum is private. Sign in to see the walks and photographs.'}</p>
-   {mode==='signup'&&<label className="field">Your name <span>(shown beside your photographs)</span><input required autoComplete="name" maxLength={80} placeholder="Lena" value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label>}
+   {mode==='signup'&&<label className="field">Your name <span>(shown beside your photographs)</span><input required autoComplete="name" maxLength={80} placeholder="Name" value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label>}
    <label className="field">Email<input type="email" required autoComplete="email" placeholder="you@example.ch" value={email} onChange={e=>setEmail(e.target.value)} disabled={busy}/></label>
    {mode!=='link'&&<label className="field">Password{mode==='signup'&&<span> (at least {MIN_PASSWORD} characters)</span>}<input type="password" required minLength={mode==='signup'?MIN_PASSWORD:undefined} autoComplete={mode==='signup'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label>}
    {error&&<p className="form-error" role="alert">{error}</p>}
