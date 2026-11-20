@@ -3,7 +3,8 @@ import {createContext,useCallback,useContext,useEffect,useRef,useState,type Reac
 import {createPortal} from 'react-dom';
 import {X} from 'lucide-react';
 
-type Picture={url:string;title:string};
+/** onClose runs after the enlarged picture is closed, e.g. to show it in its list. */
+type Picture={url:string;title:string;onClose?:()=>void};
 const ImageViewerContext=createContext<(picture:Picture)=>void>(()=>{});
 export const useImageViewer=()=>useContext(ImageViewerContext);
 
@@ -19,7 +20,7 @@ function EnlargedImage({picture,onClose}:{picture:Picture;onClose:()=>void}){
 export default function ImageViewerProvider({children}:{children:ReactNode}){
  const[picture,setPicture]=useState<Picture|null>(null);
  const open=useCallback((next:Picture)=>{if(next.url)setPicture(next)},[]);
- return <ImageViewerContext.Provider value={open}>{children}{picture&&<EnlargedImage picture={picture} onClose={()=>setPicture(null)}/>}</ImageViewerContext.Provider>;
+ return <ImageViewerContext.Provider value={open}>{children}{picture&&<EnlargedImage picture={picture} onClose={()=>{setPicture(null);picture.onClose?.()}}/>}</ImageViewerContext.Provider>;
 }
 
 export function ImageViewButton({url,title,className='',children}:{url:string;title:string;className?:string;children:ReactNode}){

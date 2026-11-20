@@ -1169,3 +1169,9 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .rain-range strong{color:var(--blue);font-weight:500;font-size:14px;margin-right:4px}
 .rain-days li>span:last-child{font-size:10px;color:#8c9580;text-align:right}
 @media(max-width:720px){.rain-subheading{margin:16px 0 10px;padding-top:12px}.rain-days{margin-top:12px}.rain-days li{padding:6px 0}}
+
+/* Photo editing: the same choices as adding a photograph */
+.photo-edit-fields{border:0;margin:0;min-width:0}
+.pin-status .pin-move{display:inline-flex;align-items:center;gap:5px;margin-left:auto;color:var(--blue);font-size:11px;text-decoration:underline;text-underline-offset:3px}
+.pin-status .pin-move[aria-pressed=true]{text-decoration:none;font-weight:600}
+.add-capture-time{display:block;color:var(--blue);font-size:12px;text-decoration:underline;text-underline-offset:3px;margin:4px 0 14px;text-align:left}

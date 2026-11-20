@@ -2,10 +2,14 @@ import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
 import {emptyTags} from '@/lib/gallery';
 import {readPhotoTags} from '@/lib/photo-tags-server';
 import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
-import type {PhotoConditions} from '@/lib/photo-conditions';
+import {fetchWeather,type PhotoConditions} from '@/lib/photo-conditions';
+import {solarPosition} from '@/lib/sun';
+import {inZurich} from '@/lib/places';
+import {isWalkParticipant} from '@/lib/walk-participants';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
-// Edit your own photograph: title, caption, category, sharing, or a new picture (already uploaded to storage).
+// Edit your own photograph: everything chosen at upload (title, place and pin, time taken, category, walk,
+// caption, sharing) or a new picture (already uploaded to storage). Tags have their own route.
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const user = await getSessionUser(supabase);
@@ -30,17 +34,56 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before saving.'}, {status:400});
     update.key = key;
   }
-  if (!Object.keys(update).length) return Response.json({ error: 'Nothing to change.' }, { status: 400 });
+  const place = str(body.place);
+  if (place !== undefined) { if (!place || place.length > 100) return Response.json({ error: 'Name the place in up to 100 characters.' }, { status: 400 }); update.place = place; }
+  if (body.lat !== undefined || body.lng !== undefined) {
+    const lat = Number(body.lat), lng = Number(body.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inZurich(lat, lng)) return Response.json({ error: 'Choose a location in the Zürich area.' }, { status: 400 });
+    update.lat = lat; update.lng = lng;
+  }
+  const walk = str(body.walk);
+  if (walk !== undefined && walk !== current.walk) {
+    if (walk.length > 100) return Response.json({ error: 'Choose a walk from the list.' }, { status: 400 });
+    if (walk) {
+      const { data: target, error: walkError } = await supabase.from('walks').select('owner').eq('id', walk).maybeSingle();
+      if (walkError || !target || (target.owner !== user.id && !await isWalkParticipant(supabase, walk))) return Response.json({ error: 'Only the creator and added participants can add photos to this walk.' }, { status: 403 });
+    }
+    update.walk = walk;
+  }
+  // Time taken: sun and weather are worked out again for the (possibly moved) place.
+  let snapshot: PhotoConditions | null = null;
+  if (body.capturedAt !== undefined) {
+    const capturedAt = body.capturedAt;
+    if (typeof capturedAt !== 'number' || !Number.isFinite(capturedAt) || capturedAt < Date.UTC(1940, 0, 1) || capturedAt > Date.now() + 60000)
+      return Response.json({ error: 'Choose when the photograph was taken, in Zürich time.' }, { status: 400 });
+    const lat = (update.lat as number | undefined) ?? current.lat, lng = (update.lng as number | undefined) ?? current.lng;
+    const weather = await fetchWeather(capturedAt, lat, lng);
+    snapshot = { capturedAt, timeSource: 'chosen', lat, lng, sun: solarPosition(capturedAt, lat, lng), weather, weatherStatus: weather ? 'available' : 'unavailable' };
+  }
+  if (!Object.keys(update).length && !snapshot) return Response.json({ error: 'Nothing to change.' }, { status: 400 });
 
-  const { data: row, error } = await supabase.from('photos').update(update).eq('id', id).eq('owner', user.id).select('*').single();
+  const { data: row, error } = Object.keys(update).length
+    ? await supabase.from('photos').update(update).eq('id', id).eq('owner', user.id).select('*').single()
+    : { data: current, error: null };
   if (error || !row) {
     return Response.json({ error: 'Your changes could not be saved. Please try again.' }, { status: 503 });
   }
   // Keep the previous file: editing a post does not delete stored media.
   const { data: signed } = await supabase.storage.from(mediaBucket(row.key)).createSignedUrl(row.key, URL_TTL);
+  let warning = '';
+  if (snapshot) {
+    const { data: existing } = await supabase.from('photo_conditions').select('photo_id').eq('photo_id', id).maybeSingle();
+    const { data: written, error: conditionsError } = existing
+      ? await supabase.from('photo_conditions').update({ snapshot }).eq('photo_id', id).select('photo_id')
+      : await supabase.from('photo_conditions').insert({ photo_id: id, snapshot }).select('photo_id');
+    // Rewriting an existing record needs the separate photo_condition_edits setup; until then it stays as it was.
+    if (conditionsError || !written?.length) warning = existing
+      ? 'Your other changes are saved. Changing when an existing photograph was taken needs a one-time database setup by Philipp.'
+      : 'Your other changes are saved, but the time taken could not be recorded.';
+  }
   const {data:conditions}=await supabase.from('photo_conditions').select('snapshot').eq('photo_id',id).maybeSingle();
   const organisation=await readPhotoTags(supabase,[id]);
-  return Response.json({ photo: toPhoto(row as PhotoRow,user.id,signed?.signedUrl??'',conditions?.snapshot as PhotoConditions??null,organisation.tags.get(id)??emptyTags()) });
+  return Response.json({ photo: toPhoto(row as PhotoRow,user.id,signed?.signedUrl??'',conditions?.snapshot as PhotoConditions??null,organisation.tags.get(id)??emptyTags()), ...(warning ? { warning } : {}) });
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {

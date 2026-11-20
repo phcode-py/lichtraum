@@ -14,7 +14,7 @@ export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemov
  const detailsId='atlas-info-'+photo.id;
  const label=photo.title.trim()||'Untitled photograph';
  function view(){if(photo.mediaType==='video')onToggle();else openImage({url:photo.url,title:label})}
- return <article className={'atlas-picture-card'+(expanded?' info-open':'')+(tracing||playing?' media-active':'')}>
+ return <article data-photo-id={photo.id} className={'atlas-picture-card'+(expanded?' info-open':'')+(tracing||playing?' media-active':'')}>
   <div className="atlas-picture-surface">
    {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video" controls/>:tracing?<PhotoTracing photo={photo}/>:<button type="button" className="atlas-picture-toggle" aria-label={(photo.mediaType==='video'?'Photograph information for ':'Enlarge ')+label} aria-controls={photo.mediaType==='video'?detailsId:undefined} onClick={view}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType}/></button>}
 

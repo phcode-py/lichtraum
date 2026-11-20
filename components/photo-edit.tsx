@@ -1,50 +1,93 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,Camera} from 'lucide-react';
+import {ArrowUpRight,Camera,Check,MapPin} from 'lucide-react';
 import {createClient} from '@/lib/supabase/client';
 import {MEDIA_ACCEPT,mediaError,uploadMedia} from '@/lib/media';
+import {places} from '@/lib/places';
+import {emptyTags,type PhotoTags} from '@/lib/gallery';
+import type {PhotoConditions} from '@/lib/photo-conditions';
+import {parseZurichDateTime,zurichDateTime} from '@/lib/sun';
 import AtlasMedia from './atlas-media';
 import PhotoTracing,{type PhotoTracingHandle} from './photo-tracing';
+import CaptureConditions from './capture-conditions';
+import {TagChoices} from './photo-tags';
 
-type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number};
+type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags};
+type Point={lat:number;lng:number};
+export type EditWalk={id:string;title:string;mine?:boolean;canEdit?:boolean};
+/** Lets the edit form borrow the big map for moving the pin. */
+export type EditPin={point:Point|null;picking:boolean;onStart:()=>void;onStop:()=>void};
 
-/** Edit your own photograph or impression: picture, title, caption, category and sharing. */
-export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel}:{photo:T;onSaved:(p:T)=>void;onCancel:()=>void}){
+const sameTags=(a:PhotoTags,b:PhotoTags)=>JSON.stringify(a)===JSON.stringify(b);
+
+/** Edit your own photograph or impression with everything chosen at upload. */
+export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,walks,pin}:{photo:T;onSaved:(p:T,notice?:string)=>void;onCancel:()=>void;walks?:EditWalk[];pin?:EditPin}){
  const tracing=useRef<PhotoTracingHandle>(null);
  const[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState('');
- const[title,setTitle]=useState(photo.title),[caption,setCaption]=useState(photo.caption),[category,setCategory]=useState(photo.category||'Reflection'),[shared,setShared]=useState(!!photo.shared);
+ const[title,setTitle]=useState(photo.title),[caption,setCaption]=useState(photo.caption),[shared,setShared]=useState(!!photo.shared);
+ const located=typeof photo.lat==='number'&&typeof photo.lng==='number';
+ const[place,setPlace]=useState(photo.place??''),[point,setPoint]=useState<Point|null>(located?{lat:photo.lat!,lng:photo.lng!}:null);
+ const initialTime=photo.conditions?zurichDateTime(photo.conditions.capturedAt):'';
+ const[time,setTime]=useState(initialTime);
+ const[walk,setWalk]=useState(photo.walk??''),[tags,setTags]=useState<PhotoTags>(photo.tags??emptyTags());
  const[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
+ // A pin dropped on the big map becomes this photograph's new place.
+ const pinned=pin?.point;
+ const[seenPin,setSeenPin]=useState(pinned);
+ if(pinned!==seenPin){setSeenPin(pinned);if(pinned){setPoint(pinned);setPlace('Dropped pin')}}
+ const stopPicking=useRef(pin?.onStop);
+ useEffect(()=>{stopPicking.current=pin?.onStop},[pin?.onStop]);
+ useEffect(()=>()=>stopPicking.current?.(),[]);
  function choose(f?:File){if(!f)return;const problem=mediaError(f);if(problem){setError(problem);return;}setError('');setFile(f);setPreview(URL.createObjectURL(f));}
+ const moved=located&&point!==null&&(point.lat!==photo.lat||point.lng!==photo.lng);
+ const capturedAt=time?parseZurichDateTime(time):null;
 
  async function save(e:React.FormEvent){
-  e.preventDefault();setBusy(true);setError('');
+  e.preventDefault();
+  if(time&&(capturedAt===null||capturedAt>Date.now())){setError('Choose a valid date and time in the past.');return;}
+  setBusy(true);setError('');
   let key='';
   try{
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
    if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file);}
-   const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,caption,category,shared,...(key?{key}:{})})});
+   const timeChanged=capturedAt!==null&&(time!==initialTime||moved);
+   const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(timeChanged?{capturedAt}:{})};
+   const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'Your changes could not be saved.');
-   onSaved({...photo,...data.photo});
+   let saved={...photo,...data.photo} as T,notice:string|undefined=data.warning;
+   if(!sameTags(tags,photo.tags??emptyTags())){
+    const t=await fetch(`/api/photos/${photo.id}/tags`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(tags)});
+    const tagData=await t.json().catch(()=>({}));
+    if(t.ok)saved={...saved,tags:tagData.tags??tags};else notice=tagData.error||'Your other changes are saved, but the tags could not be saved.';
+   }
+   onSaved(saved,notice);
   }catch(e){setError(e instanceof Error?e.message:'Your changes could not be saved.');setBusy(false);}
  }
 
+ const walkChoices=walks?.filter(w=>w.mine||w.canEdit||w.id===photo.walk)??[];
  return <form className="photo-edit" onSubmit={save}>
   <div className="photo-edit-image">
    {!preview&&photo.mediaType!=='video'?<PhotoTracing key={photo.id+photo.url} photo={photo} tracingRef={tracing}/>:<AtlasMedia key={preview||photo.url} url={preview||photo.url} title={photo.title} mediaType={file?(file.type.startsWith('video/')?'video':'photo'):photo.mediaType}/>}
    <label className="photo-edit-replace"><Camera size={16} aria-hidden="true"/>
    <input type="file" aria-label="Change photo or video" accept={MEDIA_ACCEPT} disabled={busy} onChange={e=>choose(e.target.files?.[0])}/>
   </label></div>
-  <div className="detail-body">
-   <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)} disabled={busy}/></label>
-   <label className="field">What caught your eye?<select value={category} onChange={e=>setCategory(e.target.value)} disabled={busy}><option>Reflection</option><option>Light</option><option>Shadow</option><option>Other</option></select></label>
-   <label className="field">Description <span>(optional)</span><textarea maxLength={600} rows={3} value={caption} onChange={e=>setCaption(e.target.value)} disabled={busy} placeholder="A few words about this moment."/></label>
-   <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)} disabled={busy}/><span>Share with my walking partner</span></label>
+  <fieldset className="detail-body photo-edit-fields" disabled={busy}>
+   <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label>
+   {located&&<>
+    <label className="field">Where was it?<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);if(p){setPoint({lat:p.lat,lng:p.lng});setPlace(p.name)}}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Pin, click on map'}</option>{places.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</select></label>
+    <p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p>
+    {time?<CaptureConditions time={time} onTime={setTime} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
+   </>}
+   {walks&&<label className="field">Walk <span>(optional)</span><select value={walk} onChange={e=>setWalk(e.target.value)}><option value="">No specific walk</option>{walkChoices.map(w=><option key={w.id} value={w.id}>{w.title||'Untitled walk'}</option>)}</select></label>}
+   <label className="field">Description <span>(optional)</span><textarea maxLength={600} rows={3} value={caption} onChange={e=>setCaption(e.target.value)} placeholder="A few words about this moment."/></label>
+   <details className="upload-tag-options"><summary>Tags</summary><TagChoices value={tags} onChange={setTags} disabled={busy}/></details>
+   <label className="share-photo"><input type="checkbox" checked={shared} onChange={e=>setShared(e.target.checked)}/><span>Share with my walking partner</span></label>
    {error&&<p className="form-error" role="alert">{error}</p>}
    <div className="photo-edit-actions">
-    <button type="button" onClick={onCancel} disabled={busy}>Cancel</button>
-    <button className="primary" disabled={busy||!title.trim()}>{busy?'Saving…':'Save changes'}<ArrowUpRight size={14}/></button>
+    <button type="button" onClick={onCancel}>Cancel</button>
+    <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?'Saving…':'Save changes'}<ArrowUpRight size={14}/></button>
    </div>
-  </div>
+  </fieldset>
  </form>;
 }

@@ -5,7 +5,7 @@ import {Check,Download,Eye,Layers,PenLine,Undo2,X} from 'lucide-react';
 import {parseTracing,tracingPath,tracingSVG,type TraceLayer,type TracePoint,type TraceStroke} from '@/lib/photo-tracing';
 export type PhotoTracingHandle={hasPending:()=>boolean;savePending:()=>Promise<boolean>};
 type Photo={id:string;url:string;title:string;mediaType?:'photo'|'video';isLocalPreview?:boolean;source?:string};
-export default function PhotoTracing({photo,onRatio,onEditingChange,tracingRef,enlargeable=true}:{photo:Photo;enlargeable?:boolean;onRatio?:(ratio:number)=>void;onEditingChange?:(editing:boolean)=>void;tracingRef?:Ref<PhotoTracingHandle>}){
+export default function PhotoTracing({photo,onRatio,onEditingChange,tracingRef,enlargeable=true,startTracing=false}:{photo:Photo;enlargeable?:boolean;startTracing?:boolean;onRatio?:(ratio:number)=>void;onEditingChange?:(editing:boolean)=>void;tracingRef?:Ref<PhotoTracingHandle>}){
  const[ratio,setRatio]=useState(1.5),[layers,setLayers]=useState<TraceLayer[]>([]),[draft,setDraft]=useState<TraceStroke[]>([]),[editing,setEditing]=useState(false),[paper,setPaper]=useState(false),[show,setShow]=useState(true),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false),[available,setAvailable]=useState(false),[source,setSource]=useState(''),[error,setError]=useState('');
  const pointer=useRef<number|null>(null),draftRef=useRef<TraceStroke[]>([]),surface=useRef<SVGSVGElement>(null);
  const own=layers.find(layer=>layer.mine),others=layers.filter(layer=>!layer.mine);
@@ -18,6 +18,9 @@ export default function PhotoTracing({photo,onRatio,onEditingChange,tracingRef,e
  useImperativeHandle(tracingRef,()=>({hasPending:()=>editing&&JSON.stringify(draftRef.current)!==JSON.stringify(own?.strokes??[]),savePending:save}));
  function setStrokes(strokes:TraceStroke[]){draftRef.current=strokes;setDraft(strokes)}
  function begin(){if(!loaded||busy)return;setStrokes(structuredClone(own?.strokes??[]));setEditing(true);onEditingChange?.(true);setShow(true);setError('')}
+ // Opened from a "trace" button: start drawing as soon as the existing layers have loaded.
+ const autoStarted=useRef(false);
+ useEffect(()=>{if(startTracing&&loaded&&!autoStarted.current){autoStarted.current=true;begin()}});
  function position(event:PointerEvent<SVGSVGElement>):TracePoint{const rect=event.currentTarget.getBoundingClientRect();return [Math.max(0,Math.min(1,Math.round((event.clientX-rect.left)/rect.width*10000)/10000)),Math.max(0,Math.min(1,Math.round((event.clientY-rect.top)/rect.height*10000)/10000))]}
  function down(event:PointerEvent<SVGSVGElement>){
   if(!editing||busy||event.button!==0)return;event.preventDefault();event.stopPropagation();
