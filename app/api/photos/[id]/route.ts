@@ -34,6 +34,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before saving.'}, {status:400});
     update.key = key;
   }
+  const author = str(body.author);
+  if (author !== undefined) { if (!author || author.length > 80) return Response.json({ error: 'Name the photographer in up to 80 characters.' }, { status: 400 }); update.author_name = author; }
   const place = str(body.place);
   if (place !== undefined) { if (!place || place.length > 100) return Response.json({ error: 'Name the place in up to 100 characters.' }, { status: 400 }); update.place = place; }
   if (body.lat !== undefined || body.lng !== undefined) {

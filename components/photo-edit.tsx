@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {ArrowUpRight,Camera,Check,MapPin} from 'lucide-react';
+import {ArrowUpRight,Camera,Check,MapPin,Trash2} from 'lucide-react';
 import {createClient} from '@/lib/supabase/client';
 import {MEDIA_ACCEPT,mediaError,uploadMedia} from '@/lib/media';
 import {districts,nearestPlace,places,squares} from '@/lib/places';
@@ -11,8 +11,9 @@ import AtlasMedia from './atlas-media';
 import PhotoTracing,{type PhotoTracingHandle} from './photo-tracing';
 import CaptureConditions from './capture-conditions';
 import {TagChoices} from './photo-tags';
+import TakenBy from './taken-by';
 
-type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;createdAt?:number};
+type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;createdAt?:number;author?:string};
 type Point={lat:number;lng:number};
 export type EditWalk={id:string;title:string;mine?:boolean;canEdit?:boolean};
 /** Lets the edit form borrow the big map for moving the pin. */
@@ -21,7 +22,7 @@ export type EditPin={point:Point|null;picking:boolean;onStart:()=>void;onStop:()
 const sameTags=(a:PhotoTags,b:PhotoTags)=>JSON.stringify(a)===JSON.stringify(b);
 
 /** Edit your own photograph or impression with everything chosen at upload. */
-export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,walks,pin}:{photo:T;onSaved:(p:T,notice?:string)=>void;onCancel:()=>void;walks?:EditWalk[];pin?:EditPin}){
+export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,onDeleted,walks,pin,people=[]}:{photo:T;onSaved:(p:T,notice?:string)=>void;onCancel:()=>void;onDeleted?:(id:string)=>void;walks?:EditWalk[];pin?:EditPin;people?:string[]}){
  const tracing=useRef<PhotoTracingHandle>(null);
  const[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState('');
  const[title,setTitle]=useState(photo.title),[caption,setCaption]=useState(photo.caption),[shared,setShared]=useState(!!photo.shared);
@@ -30,8 +31,9 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
  // The date the picture already shows: when it was taken, or else when it was added. It is only saved if changed.
  const initialTime=photo.conditions?zurichDateTime(photo.conditions.capturedAt):photo.createdAt?zurichDateTime(photo.createdAt):'';
  const[time,setTime]=useState(initialTime);
+ const[author,setAuthor]=useState(photo.author??'');
  const[walk,setWalk]=useState(photo.walk??''),[tags,setTags]=useState<PhotoTags>(photo.tags??emptyTags());
- const[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmDelete,setConfirmDelete]=useState(false);
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
  // A pin dropped on the big map becomes this photograph's new place.
  const pinned=pin?.point;
@@ -46,6 +48,13 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
  const moved=located&&point!==null&&(point.lat!==photo.lat||point.lng!==photo.lng);
  const capturedAt=time?parseZurichDateTime(time):null;
 
+ /** Removes the picture and its file for good, after the person confirmed it here. */
+ async function remove(){
+  setBusy(true);setError('');
+  try{const r=await fetch(`/api/photos/${photo.id}`,{method:'DELETE'});if(!r.ok)throw new Error('The picture could not be deleted. Try again.');onDeleted?.(photo.id);}
+  catch(e){setError(e instanceof Error?e.message:'The picture could not be deleted. Try again.');setBusy(false);}
+ }
+
  async function save(e:React.FormEvent){
   e.preventDefault();
   if(time&&(capturedAt===null||capturedAt>Date.now())){setError('Choose a valid date and time in the past.');return;}
@@ -55,7 +64,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
    if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file);}
    const timeChanged=capturedAt!==null&&(time!==initialTime||(moved&&!!photo.conditions));
-   const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(timeChanged?{capturedAt}:{})};
+   const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(author.trim()&&author.trim()!==(photo.author??'')?{author:author.trim()}:{}),...(timeChanged?{capturedAt}:{})};
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'Your changes could not be saved.');
    let saved={...photo,...data.photo} as T,notice:string|undefined=data.warning;
@@ -82,6 +91,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
     <label className="field">Kreis or square<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);setAutoPlace('');setPlace(p?p.name:photo.place??'')}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Choose a Kreis or square'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>
     {time?<CaptureConditions time={time} onTime={setTime} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
    </>}
+   <TakenBy value={author} onChange={setAuthor} people={[...people,...(photo.author?[photo.author]:[])]}/>
    {walks&&<label className="field">Walk <span>(optional)</span><select value={walk} onChange={e=>setWalk(e.target.value)}><option value="">No specific walk</option>{walkChoices.map(w=><option key={w.id} value={w.id}>{w.title||'Untitled walk'}</option>)}</select></label>}
    <label className="field">Description <span>(optional)</span><textarea maxLength={600} rows={3} value={caption} onChange={e=>setCaption(e.target.value)} placeholder="A few words about this moment."/></label>
    <details className="upload-tag-options"><summary>Tags</summary><TagChoices value={tags} onChange={setTags} disabled={busy}/></details>
@@ -91,6 +101,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
     <button type="button" onClick={onCancel}>Cancel</button>
     <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?'Saving…':'Save changes'}<ArrowUpRight size={14}/></button>
    </div>
+   {onDeleted&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" onClick={()=>setConfirmDelete(true)}><Trash2 size={13} aria-hidden="true"/>Delete picture</button>}</div>}
   </fieldset>
  </form>;
 }

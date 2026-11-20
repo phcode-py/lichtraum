@@ -46,6 +46,8 @@ export async function POST(request: Request) {
   const walk = str(body.walk).slice(0, 100), lat = Number(body.lat), lng = Number(body.lng);
   const category = CATEGORIES.includes(str(body.category)) ? str(body.category) : 'Reflection';
   const shared = body.shared === true;
+  // Who took it: the person adding it unless another name is given.
+  const author = (str(body.author) || user.name).slice(0, 80);
 
   const validKey = validMediaKey(key, user.id);
   if (!validKey || !title || title.length > 100 || caption.length > 600 || place.length > 100 ||
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
     const weather=await fetchWeather(capturedAt,lat,lng);
     conditions={capturedAt,timeSource:body.timeSource==='camera'?'camera':'chosen',lat,lng,sun:solarPosition(capturedAt,lat,lng),weather,weatherStatus:weather?'available':'unavailable'};
   }
-  const photo={owner:user.id,author_name:user.name,title,caption,place,category,walk,shared,lat,lng,key};
+  const photo={owner:user.id,author_name:author,title,caption,place,category,walk,shared,lat,lng,key};
   const {data:row,error}=conditions
     ? await supabase.rpc('create_photo_with_conditions',{p_photo:photo,p_snapshot:conditions}).single()
     : await supabase.from('photos').insert(photo).select('*').single();
