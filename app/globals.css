@@ -1175,3 +1175,15 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .pin-status .pin-move{display:inline-flex;align-items:center;gap:5px;margin-left:auto;color:var(--blue);font-size:11px;text-decoration:underline;text-underline-offset:3px}
 .pin-status .pin-move[aria-pressed=true]{text-decoration:none;font-weight:600}
 .add-capture-time{display:block;color:var(--blue);font-size:12px;text-decoration:underline;text-underline-offset:3px;margin:4px 0 14px;text-align:left}
+/* Tags inside the edit form read like the other field titles: quiet typewriter labels, no browser triangle. */
+.photo-edit .upload-tag-options{margin:16px 0 0;border:0;padding:0}
+.photo-edit .upload-tag-options>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;font:400 9px/1.6 'Courier New',Courier,monospace;color:#77776a;padding:4px 2px 4px 0}
+.photo-edit .upload-tag-options>summary::-webkit-details-marker{display:none}
+.photo-edit .upload-tag-options>summary::after{content:"+";font-size:12px;color:var(--blue);line-height:1}
+.photo-edit .upload-tag-options[open]>summary::after{content:"−"}
+.photo-edit .upload-tag-options .photo-tag-fields fieldset{margin:14px 0 6px}
+.photo-edit .upload-tag-options .photo-tag-fields legend{font:400 9px/1.6 'Courier New',Courier,monospace;color:#949489;margin-bottom:10px}
+.photo-edit .upload-tag-options .photo-tag-fields legend>span{font-size:8px}
+.photo-edit .upload-tag-options .tag-choice-list>label{font-size:10px;margin-bottom:8px;color:#4f4f44}
+.photo-edit .upload-tag-options .tag-choice-list small{font-size:8px}
+.photo-edit .upload-tag-options select{font:10px 'Courier New',Courier,monospace;border:0;border-bottom:1px solid #e3e3dc;background:transparent;padding:4px 0;width:100%;color:#4f4f44}

@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {ArrowUpRight,Camera,Check,MapPin} from 'lucide-react';
 import {createClient} from '@/lib/supabase/client';
 import {MEDIA_ACCEPT,mediaError,uploadMedia} from '@/lib/media';
-import {places} from '@/lib/places';
+import {districts,places,squares} from '@/lib/places';
 import {emptyTags,type PhotoTags} from '@/lib/gallery';
 import type {PhotoConditions} from '@/lib/photo-conditions';
 import {parseZurichDateTime,zurichDateTime} from '@/lib/sun';
@@ -75,7 +75,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,wa
   <fieldset className="detail-body photo-edit-fields" disabled={busy}>
    <label className="field">Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)}/></label>
    {located&&<>
-    <label className="field">Where was it?<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);if(p){setPoint({lat:p.lat,lng:p.lng});setPlace(p.name)}}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Pin, click on map'}</option>{places.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</select></label>
+    <label className="field">Where was it?<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);if(p){setPoint({lat:p.lat,lng:p.lng});setPlace(p.name)}}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Pin, click on map'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>
     <p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p>
     {time?<CaptureConditions time={time} onTime={setTime} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
    </>}
