@@ -1147,3 +1147,23 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .paper-resize:hover,.paper-resize:focus-visible{opacity:1}
 .paper-resize:focus-visible{outline:1px solid var(--blue);outline-offset:0}
 @media(max-width:720px){.sun-sheet-heading{margin-bottom:16px}.paper-resize{width:32px;height:32px}}
+
+/* Rain radar and MeteoSwiss forecast sheet */
+.rain-play{display:grid;place-items:center;width:34px;height:34px;padding:0!important;border:1px solid #d5dacb;border-radius:50%;color:var(--blue)!important}
+.rain-play:disabled{opacity:.4}
+.rain-caption{font:9px/1.6 'Courier New',Courier,monospace;color:#8b8b81;margin:8px 0 0}
+.rain-caption button,.rain-sheet .conditions-note button{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.rain-sheet .sun-slider{margin:12px 0 10px}
+.rain-legend{display:flex;align-items:center;gap:8px;font-size:9px;color:#8c9580}
+.rain-legend i{flex:1;height:5px;background:linear-gradient(90deg,rgb(150 178 255 / 30%),rgb(96 132 250 / 55%),#2446e8 70%,#16269a)}
+.rain-subheading{color:var(--blue);font-size:13px;font-weight:600;letter-spacing:-.2px;margin:24px 0 12px;padding-top:16px;border-top:1px solid #dfe3d7}
+.rain-hours{list-style:none;margin:0;padding:0 0 4px;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(52px,1fr);overflow-x:auto;gap:2px;scrollbar-width:thin}
+.rain-hours li{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:9px;color:#8c9580;font-variant-numeric:tabular-nums;padding:2px 0}
+.rain-hours svg,.rain-days svg{color:var(--blue)}
+.rain-hours strong{font-size:15px;font-weight:500;color:var(--blue);letter-spacing:-.4px}
+.rain-days{list-style:none;margin:18px 0 0;padding:0}
+.rain-days li{display:grid;grid-template-columns:52px 28px 1fr auto;align-items:center;gap:8px;font-size:11px;color:#727e64;padding:8px 0;border-top:1px solid #eceee6;font-variant-numeric:tabular-nums}
+.rain-days li>span:first-child{font-size:10px;color:#8c9580}
+.rain-range strong{color:var(--blue);font-weight:500;font-size:14px;margin-right:4px}
+.rain-days li>span:last-child{font-size:10px;color:#8c9580;text-align:right}
+@media(max-width:720px){.rain-subheading{margin:16px 0 10px;padding-top:12px}.rain-days{margin-top:12px}.rain-days li{padding:6px 0}}
