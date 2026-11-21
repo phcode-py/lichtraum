@@ -9,6 +9,13 @@ export function mediaError(file: {type:string;size:number}): string {
   return 'Choose a JPG, PNG, WebP photo or an MP4, WebM, MOV video.';
 }
 
+/** Gallery tiles show a muted, paused video. The "#t=" fragment makes Safari paint the first frame
+ * instead of a blank box. Playable players and local blob previews keep their URL unchanged. */
+export function videoThumbnailSrc(url:string, controls=false) {
+  if (controls || !/^https?:/.test(url) || url.includes('#')) return url;
+  return url + '#t=0.001';
+}
+
 // Existing photo keys stay unchanged. Only videos have an extension and use the new bucket.
 export const mediaKind = (key:string): 'photo'|'video' => /\.(mp4|webm|mov)$/.test(key) ? 'video' : 'photo';
 export const mediaBucket = (key:string) => mediaKind(key) === 'video' ? 'videos' : 'photos';
