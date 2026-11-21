@@ -1,5 +1,7 @@
 # Editing when a photograph was taken — setup for Philipp
 
+> **Done on 21 November 2026.** `20261120000000_photo_condition_edits.sql` was never applied. It was replaced by `20261121010000_admin_photo_edits.sql` (applied), which lets owners correct the time taken *and* lets admins (Mona, Philipp, Lena) edit every photograph they can see: picture, title, place and pin, time taken, walk, description, tags and sharing. Deleting stays with the owner, and nobody can change who a photograph belongs to. The text below is kept for history.
+
 Editing a photograph now offers everything from "add a photograph": picture, title, place (list or a new pin on the map), when it was taken, walk ("No specific walk" or a walk the person created or joined), description, tags and sharing. The "What caught your eye?" field is no longer shown; existing category values stay in the database unchanged.
 
 Place, pin, walk and tags save with the existing permissions. Saving "when it was taken" for a photograph that has **no** sun and weather record yet also works today (it inserts a new record).

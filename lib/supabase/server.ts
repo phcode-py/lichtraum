@@ -35,6 +35,12 @@ export async function getSessionUser(supabase: Awaited<ReturnType<typeof createC
   return { id: user.id, email: user.email, name: (fullName || user.email.split("@")[0] || "Photographer").slice(0, 80) };
 }
 
+/** Admins (Mona, Philipp, Lena) may edit every photograph they can see. */
+export async function isAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await supabase.rpc("is_member_admin");
+  return !error && data === true;
+}
+
 /** Rejects cross-site form posts. */
 export function isCrossOrigin(request: Request) {
   const origin = request.headers.get("origin");

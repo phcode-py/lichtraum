@@ -1,14 +1,14 @@
 import {mediaBucket, validMediaKey, storedMediaExists} from '@/lib/media';
 import {emptyTags} from '@/lib/gallery';
 import {readPhotoTags} from '@/lib/photo-tags-server';
-import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
+import { createClient, getSessionUser, isAdmin, isCrossOrigin } from '@/lib/supabase/server';
 import {fetchWeather,type PhotoConditions} from '@/lib/photo-conditions';
 import {solarPosition} from '@/lib/sun';
 import {inZurich} from '@/lib/places';
 import {isWalkParticipant} from '@/lib/walk-participants';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
-// Edit your own photograph: everything chosen at upload (title, place and pin, time taken, category, walk,
+// Edit a photograph (your own, or any visible one for admins): everything chosen at upload (title, place and pin, time taken, category, walk,
 // caption, sharing) or a new picture (already uploaded to storage). Tags have their own route.
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -19,8 +19,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return Response.json({ error: 'Invalid request.' }, { status: 400 }); }
-  const { data: current } = await supabase.from('photos').select('*').eq('id', id).eq('owner', user.id).maybeSingle();
+  const { data: current } = await supabase.from('photos').select('*').eq('id', id).maybeSingle();
   if (!current) return new Response('Not found', { status: 404 });
+  const admin = await isAdmin(supabase);
+  if (current.owner !== user.id && !admin) return new Response('Not found', { status: 404 });
 
   const update: Record<string, unknown> = {};
   const str = (v: unknown) => (typeof v === 'string' ? v.trim() : undefined);
@@ -30,7 +32,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (category !== undefined && CATEGORIES.includes(category)) update.category = category;
   if (typeof body.shared === 'boolean') update.shared = body.shared;
   if (key !== undefined && key !== current.key) {
-    if (!validMediaKey(key, user.id)) return Response.json({ error: 'Invalid picture.' }, { status: 400 });
+    // A new picture always goes into the owner's folder, also when an admin replaces it.
+    if (!validMediaKey(key, current.owner)) return Response.json({ error: 'Invalid picture.' }, { status: 400 });
     if (!await storedMediaExists(supabase, key)) return Response.json({error:'Upload a photo or video before saving.'}, {status:400});
     update.key = key;
   }
@@ -65,7 +68,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!Object.keys(update).length && !snapshot) return Response.json({ error: 'Nothing to change.' }, { status: 400 });
 
   const { data: row, error } = Object.keys(update).length
-    ? await supabase.from('photos').update(update).eq('id', id).eq('owner', user.id).select('*').single()
+    ? await supabase.from('photos').update(update).eq('id', id).eq('owner', current.owner).select('*').single()
     : { data: current, error: null };
   if (error || !row) {
     return Response.json({ error: 'Your changes could not be saved. Please try again.' }, { status: 503 });
@@ -80,12 +83,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       : await supabase.from('photo_conditions').insert({ photo_id: id, snapshot }).select('photo_id');
     // Rewriting an existing record needs the separate photo_condition_edits setup; until then it stays as it was.
     if (conditionsError || !written?.length) warning = existing
-      ? 'Your other changes are saved. Changing when an existing photograph was taken needs a one-time database setup by Philipp.'
+      ? 'Your other changes are saved, but the new time taken could not be recorded.'
       : 'Your other changes are saved, but the time taken could not be recorded.';
   }
   const {data:conditions}=await supabase.from('photo_conditions').select('snapshot').eq('photo_id',id).maybeSingle();
   const organisation=await readPhotoTags(supabase,[id]);
-  return Response.json({ photo: toPhoto(row as PhotoRow,user.id,signed?.signedUrl??'',conditions?.snapshot as PhotoConditions??null,organisation.tags.get(id)??emptyTags()), ...(warning ? { warning } : {}) });
+  return Response.json({ photo: toPhoto(row as PhotoRow,user.id,signed?.signedUrl??'',conditions?.snapshot as PhotoConditions??null,organisation.tags.get(id)??emptyTags(),admin), ...(warning ? { warning } : {}) });
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {

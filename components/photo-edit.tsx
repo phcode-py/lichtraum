@@ -13,7 +13,7 @@ import CaptureConditions from './capture-conditions';
 import {TagChoices} from './photo-tags';
 import TakenBy from './taken-by';
 
-type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;createdAt?:number;author?:string};
+type Editable={mediaType?:'photo'|'video';id:string;title:string;caption:string;url:string;category?:string;shared?:number;place?:string;lat?:number;lng?:number;walk?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;createdAt?:number;author?:string;mine?:boolean;ownerId?:string};
 type Point={lat:number;lng:number};
 export type EditWalk={id:string;title:string;mine?:boolean;canEdit?:boolean};
 /** Lets the edit form borrow the big map for moving the pin. */
@@ -62,7 +62,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
   let key='';
   try{
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
-   if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file,setPrep);setPrep(null);}
+   if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,photo.ownerId??user.id,file,setPrep);setPrep(null);}
    const timeChanged=capturedAt!==null&&(time!==initialTime||(moved&&!!photo.conditions));
    const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(author.trim()&&author.trim()!==(photo.author??'')?{author:author.trim()}:{}),...(timeChanged?{capturedAt}:{})};
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -101,7 +101,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
     <button type="button" onClick={onCancel}>Cancel</button>
     <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?(prep!==null?`Preparing video… ${Math.round(prep*100)}%`:'Saving…'):'Save changes'}<ArrowUpRight size={14}/></button>
    </div>
-   {onDeleted&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" className="delete-icon" aria-label="Delete picture" title="Delete picture" onClick={()=>setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true"/></button>}</div>}
+   {onDeleted&&photo.mine!==false&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" className="delete-icon" aria-label="Delete picture" title="Delete picture" onClick={()=>setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true"/></button>}</div>}
   </fieldset>
  </form>;
 }

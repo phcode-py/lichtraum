@@ -4,7 +4,7 @@ import {emptyTags,parseTags} from '@/lib/gallery';
 import {readPhotoTags,writePhotoTags} from '@/lib/photo-tags-server';
 import {fetchWeather,type PhotoConditions} from '@/lib/photo-conditions';
 import {solarPosition} from '@/lib/sun';
-import { createClient, getSessionUser, isCrossOrigin } from '@/lib/supabase/server';
+import { createClient, getSessionUser, isAdmin, isCrossOrigin } from '@/lib/supabase/server';
 import { CATEGORIES, URL_TTL, toPhoto, type PhotoRow } from '@/lib/photos';
 
 export async function GET() {
@@ -25,8 +25,9 @@ export async function GET() {
   if(!rows.length){const {error}=await supabase.from('photo_conditions').select('photo_id').limit(0);conditionsAvailable=!error;}
   for(let offset=0;offset<rows.length;offset+=100){const {data,error}=await supabase.from('photo_conditions').select('photo_id,snapshot').in('photo_id',rows.slice(offset,offset+100).map(p=>p.id));if(error){conditionsAvailable=false;break;}for(const c of data??[])conditions.set(c.photo_id,c.snapshot as PhotoConditions);}
   const organisation=await readPhotoTags(supabase,rows.map(p=>p.id));
+  const admin=await isAdmin(supabase);
   return Response.json(
-    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '',conditions.get(p.id)??null,organisation.tags.get(p.id)??emptyTags())), conditionsAvailable, tagsAvailable:organisation.available },
+    { photos: (rows as PhotoRow[]).map(p => toPhoto(p, user.id, urls.get(p.key) ?? '',conditions.get(p.id)??null,organisation.tags.get(p.id)??emptyTags(),admin)), conditionsAvailable, tagsAvailable:organisation.available },
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }

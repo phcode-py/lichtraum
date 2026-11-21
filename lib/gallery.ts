@@ -13,7 +13,7 @@ export const WEATHER=[{id:'clear',label:'Clear skies'},{id:'partly-cloudy',label
 export const AREAS=[{id:'industrial',label:'Industrial'},{id:'residential',label:'Residential'},{id:'city-centre',label:'City centre'},{id:'waterfront',label:'Waterfront'},{id:'park-nature',label:'Park / nature'},{id:'mixed-use',label:'Mixed use'}] as const;
 export type PhotoTags={imageTypes:string[];timeOfDay:string;weather:string[];area:string};
 export const emptyTags=():PhotoTags=>({imageTypes:[],timeOfDay:'',weather:[],area:''});
-export type GalleryPhoto={mediaType?:'photo'|'video';id:string;title:string;caption:string;place:string;lat:number;lng:number;url:string;createdAt:number;author?:string;mine?:boolean;shared?:number;category?:string;walk?:string;source?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;isLocalPreview?:boolean};
+export type GalleryPhoto={mediaType?:'photo'|'video';id:string;title:string;caption:string;place:string;lat:number;lng:number;url:string;createdAt:number;author?:string;mine?:boolean;editable?:boolean;ownerId?:string;shared?:number;category?:string;walk?:string;source?:string;conditions?:PhotoConditions|null;tags?:PhotoTags;isLocalPreview?:boolean};
 export type GalleryFilters={query:string;walk:string;types:string[];time:string;weather:string[];area:string};
 export const emptyFilters=():GalleryFilters=>({query:'',walk:'',types:[],time:'',weather:[],area:''});
 export type GallerySort='uploaded-newest'|'uploaded-oldest'|'taken-newest'|'taken-oldest';
@@ -66,3 +66,6 @@ export function filterGallery(photos:GalleryPhoto[],filters:GalleryFilters,sort:
   return (sort.endsWith('oldest')?1:-1)*(time(a)-time(b))||a.id.localeCompare(b.id);
  });
 }
+
+/** Owners edit their own photographs; admins edit every one they can see. */
+export const canEditPhoto=(p:{mine?:boolean;editable?:boolean})=>p.editable??p.mine!==false;

@@ -7,7 +7,7 @@ import PhotoEdit from './photo-edit';
 import WalkActions from './walk-actions';
 import WalkEditor from './walk-editor';
 import AtlasPictureCard from './atlas-picture-card';
-import type {GalleryPhoto} from '@/lib/gallery';
+import {canEditPhoto,type GalleryPhoto} from '@/lib/gallery';
 import {formatDuration,type Walk} from '@/lib/walks';
 
 export type Impression=Omit<GalleryPhoto,'caption'|'lat'|'lng'>&{caption?:string;lat?:number;lng?:number};
@@ -41,7 +41,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
    {momentForm}
    <section className="walk-stops">
     {!pins.length&&<p className="walk-empty-note">No impressions on this walk.</p>}
-    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&p.mine!==false?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={p.mine!==false?()=>setEditingMoment(p.id):undefined}/>}</div>)}
+    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&canEditPhoto(p)?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={canEditPhoto(p)?()=>setEditingMoment(p.id):undefined}/>}</div>)}
    </section>
   </div>;
  }
