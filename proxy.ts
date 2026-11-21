@@ -28,8 +28,17 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (user && request.nextUrl.pathname === "/signin") return NextResponse.redirect(new URL("/", request.url));
-  if (user || isPublic(request.nextUrl.pathname)) return response;
+  const path = request.nextUrl.pathname;
+  if (user && path === "/signin") return NextResponse.redirect(new URL("/", request.url));
+  if (user) {
+    // New accounts wait on /waiting until an admin admits them. Only pages are
+    // checked here; the database itself refuses data to waiting accounts.
+    if (!needsAdmissionCheck(path)) return response;
+    const admitted = await isAdmitted(supabase);
+    if (admitted === (path === "/waiting")) return withCookies(NextResponse.redirect(new URL(admitted ? "/" : "/waiting", request.url)), response);
+    return response;
+  }
+  if (isPublic(path)) return response;
 
   // Signed out: APIs answer 401, pages go to the sign-in screen.
   if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -38,10 +47,31 @@ export async function proxy(request: NextRequest) {
   const signIn = request.nextUrl.clone();
   signIn.pathname = "/signin";
   signIn.search = "";
-  const redirect = NextResponse.redirect(signIn);
-  // Keep any refreshed/cleared auth cookies.
+  return withCookies(NextResponse.redirect(signIn), response);
+}
+
+// Keep any refreshed/cleared auth cookies on a redirect.
+function withCookies(redirect: NextResponse, response: NextResponse) {
   response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
   return redirect;
+}
+
+function needsAdmissionCheck(path: string) {
+  // Pages only: not APIs, sign-in links, the password page or files such as icons.
+  return !path.startsWith("/api/") && !path.startsWith("/auth/") && path !== "/password" && !/\.[a-z0-9]+$/i.test(path) && !isPublic(path);
+}
+
+/**
+ * Closed by default: only an explicit "approved" from the database lets someone
+ * in. Errors, a missing setup or any other answer keep them on /waiting.
+ */
+async function isAdmitted(supabase: ReturnType<typeof createServerClient>) {
+  try {
+    const { data, error } = await supabase.rpc("my_membership");
+    return !error && (data as { status?: unknown } | null)?.status === "approved";
+  } catch {
+    return false;
+  }
 }
 
 function isPublic(path: string) {

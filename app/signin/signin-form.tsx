@@ -52,13 +52,13 @@ export default function SignInForm({linkError}:{linkError:boolean}){
   </div>
   <form onSubmit={submit}>
    <h1>{mode==='signup'?<>JOIN THE<br/>LIGHT ATLAS</>:<>ENTER THE<br/>LIGHT ATLAS</>}</h1>
-   <p className="signin-lede">{mode==='link'?'We email you a one-time link. Afterwards you can set a password.':'Lichtraum is private. Sign in to see the walks and photographs.'}</p>
+   <p className="signin-lede">{mode==='link'?'We email you a one-time link. Afterwards you can set a password.':mode==='signup'?'Lichtraum is private. Ask to join, and Mona, Philipp or Lena will let you in.':'Lichtraum is private. Sign in to see the walks and photographs.'}</p>
    {mode==='signup'&&<label className="field">Your name <span>(shown beside your photographs)</span><input required autoComplete="name" maxLength={80} placeholder="Name" value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label>}
    <label className="field">Email<input type="email" required autoComplete="email" placeholder="you@example.ch" value={email} onChange={e=>setEmail(e.target.value)} disabled={busy}/></label>
    {mode!=='link'&&<label className="field">Password{mode==='signup'&&<span> (at least {MIN_PASSWORD} characters)</span>}<input type="password" required minLength={mode==='signup'?MIN_PASSWORD:undefined} autoComplete={mode==='signup'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label>}
    {error&&<p className="form-error" role="alert">{error}</p>}
    <button className="primary signin-submit" disabled={busy||!email.trim()||(mode!=='link'&&!password)||(mode==='signup'&&!name.trim())}>
-    {busy?'One moment…':mode==='signin'?'Sign in':mode==='signup'?'Create account':'Email me a link'}<ArrowUpRight size={16}/>
+    {busy?'One moment…':mode==='signin'?'Sign in':mode==='signup'?'Ask to join':'Email me a link'}<ArrowUpRight size={16}/>
    </button>
    {mode!=='signup'&&<button type="button" className="signin-again" onClick={()=>switchTo(mode==='link'?'signin':'link')}>{mode==='link'?'Use my password':'Forgot or no password'}</button>}
   </form>

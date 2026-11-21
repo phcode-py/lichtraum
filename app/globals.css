@@ -925,6 +925,17 @@ main:has(.navigation-trigger[aria-expanded=true]) :is(.topbar-actions,.map-panel
 /* Account rests at the centre of the same faded map wall as Working notes. */
 .workspace.account-paper-workspace>.sidebar{left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(370px,calc(100vw - 48px));max-width:none;max-height:none;padding:0;background:transparent;backdrop-filter:none;box-shadow:none;overflow:visible}
 .account-paper-workspace .account-panel{position:relative;width:100%;max-height:calc(100dvh - 100px);overflow:auto;padding:38px 30px;background:#fffffc;box-shadow:1px 3px 9px #25282015}
+/* With join requests waiting, the account paper moves left so the pair stays centred. */
+@media(min-width:900px){
+ .workspace.account-paper-workspace>.sidebar:has(.join-requests){transform:translate(calc(-50% - 170px),-50%)}
+ .account-paper-workspace .join-requests{position:absolute;top:0;left:calc(100% + 40px);width:300px;max-height:calc(100dvh - 100px);overflow:auto;padding:18px 8px 12px;margin:-18px -8px 0;scrollbar-width:thin}
+}
+@media(max-width:899px){
+ .workspace.account-paper-workspace>.sidebar:has(.join-requests){top:72px;transform:translateX(-50%);max-height:calc(100dvh - 96px);overflow:auto;padding-top:20px}
+ .workspace.account-paper-workspace>.sidebar:has(.join-requests) .account-panel{max-height:none;overflow:visible}
+ .account-paper-workspace .join-requests{margin:46px 0 24px}
+ .workspace.account-paper-workspace>.sidebar:has(.join-requests) .account-tapes>span:last-child{display:none}
+}
 
 .workspace.account-paper-workspace.section-open>.map-panel{filter:blur(10px);opacity:.38;pointer-events:none;transform:scale(1.06)}
 .account-paper-workspace.section-open>.map-panel .map-heading{visibility:hidden}
@@ -942,6 +953,27 @@ main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{displa
 .account-details dd a{color:var(--blue);font-size:12px;margin-left:auto}
 .account-details dd a:hover{text-decoration:underline;text-underline-offset:4px}
 .account-status{font:10px/1.6 'Courier New',Courier,monospace;color:#8b8b81;margin:0 0 16px}
+
+/* Join requests: one taped sheet per person, pinned beside the account paper. */
+.join-requests{display:flex;flex-direction:column;gap:30px}
+.join-request{position:relative;padding:32px 26px 24px;background:#fffffc;box-shadow:1px 3px 9px #25282015;transition:opacity .5s,transform .5s}
+.join-request:nth-child(odd){transform:rotate(.7deg)}
+.join-request:nth-child(even){transform:rotate(-.9deg)}
+.join-request.decided{opacity:.55}
+.join-request-tape{position:absolute;top:-16px;left:50%;width:16px;height:42px;background:var(--blue);opacity:.94;transform:translateX(-50%) rotate(4deg);clip-path:polygon(1% 2%,100% 0,98% 98%,0 100%)}
+.join-request:nth-child(even) .join-request-tape{left:38%;transform:rotate(-5deg)}
+.join-request-label{display:flex;justify-content:space-between;gap:12px;margin:0 0 20px;font:10px/1.7 'Courier New',Courier,monospace;color:#8b8b81;text-transform:uppercase}
+.join-request-label time{text-transform:none}
+.join-request h2{margin:0;font-size:24px;font-weight:400;line-height:1.15;letter-spacing:-.6px;color:#292c25;overflow-wrap:anywhere}
+.join-request-email{margin:8px 0 22px;font-size:13px;line-height:1.5;color:#858a7e;overflow-wrap:anywhere}
+.join-request-actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;padding-top:15px;border-top:1px solid #e6e7e0;font-size:13px;color:#555a4e}
+.join-request-actions>span{flex-basis:100%}
+.join-request-actions button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0;color:var(--blue);font-size:15px;font-weight:400}
+.join-request-actions button.quiet{color:#858a7e;font-size:13px}
+.join-request-actions button:hover:not(:disabled){text-decoration:underline;text-underline-offset:4px}
+.join-request-actions button:disabled{opacity:.5}
+.join-request-outcome{display:flex;align-items:center;gap:7px;margin:0;padding-top:15px;border-top:1px solid #e6e7e0;font-size:13px;line-height:1.5;color:var(--blue)}
+.join-request-error{margin:12px 0 0;font:10px/1.6 'Courier New',Courier,monospace;color:#b3261e}
 
 .paper-history{display:block;margin:0 0 12px;color:#8b8b81;font:10px/1.7 'Courier New',Courier,monospace}
 .paper-history:hover{color:var(--blue)}

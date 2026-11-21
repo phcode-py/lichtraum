@@ -3,5 +3,7 @@ import {createClient,getSessionUser} from '@/lib/supabase/server';
 export async function GET(){
  const db=await createClient(),user=await getSessionUser(db);
  if(!user)return Response.json({error:'Sign in to see your account.'},{status:401});
- return Response.json({username:user.name,email:user.email},{headers:{'Cache-Control':'no-store'}});
+ const {data}=await db.rpc('my_membership');
+ const admin=(data as {admin?:boolean}|null)?.admin===true;
+ return Response.json({username:user.name,email:user.email,admin},{headers:{'Cache-Control':'no-store'}});
 }
