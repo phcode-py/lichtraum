@@ -1,3 +1,5 @@
+import {MAX_IMAGE_INPUT_BYTES, isImageType, storedImageOk} from './image-policy.ts';
+
 export const MEDIA_ACCEPT = 'image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime';
 export const VIDEO_TYPES: Record<string, string> = {'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
@@ -5,7 +7,8 @@ export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 export function mediaError(file: {type:string;size:number}): string {
   if (file.size === 0) return 'This file is empty. Choose another photo or video.';
   if (Object.hasOwn(VIDEO_TYPES, file.type)) return file.size <= MAX_VIDEO_BYTES ? '' : 'Choose a video under 50 MB.';
-  if (['image/jpeg','image/png','image/webp'].includes(file.type)) return file.size <= 10 * 1024 * 1024 ? '' : 'Choose a photo under 10 MB.';
+  // Photos are shrunk in the browser before upload, so larger originals are fine.
+  if (isImageType(file.type)) return file.size <= MAX_IMAGE_INPUT_BYTES ? '' : 'Choose a photo under 50 MB.';
   return 'Choose a JPG, PNG, WebP photo or an MP4, WebM, MOV video.';
 }
 
@@ -41,8 +44,7 @@ export async function uploadMedia(supabase: import('@supabase/supabase-js').Supa
 export async function storedMediaExists(supabase: import('@supabase/supabase-js').SupabaseClient, key:string) {
   const {data, error} = await supabase.storage.from(mediaBucket(key)).info(key);
   if (error || !data || !data.size || !data.contentType) return false;
+  if (mediaKind(key) !== 'video') return storedImageOk({type:data.contentType, size:data.size});
   if (mediaError({type:data.contentType, size:data.size})) return false;
-  return mediaKind(key) === 'video'
-    ? key.endsWith('.' + VIDEO_TYPES[data.contentType])
-    : data.contentType.startsWith('image/');
+  return key.endsWith('.' + VIDEO_TYPES[data.contentType]);
 }

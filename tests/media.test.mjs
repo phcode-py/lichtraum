@@ -6,8 +6,8 @@ const owner='11111111-1111-4111-8111-111111111111';
 const key=owner+'/22222222-2222-4222-8222-222222222222';
 test('photo and video limits reject unsupported, oversized and empty files',()=>{
  for(const type of ['image/jpeg','image/png','image/webp']){
-  assert.equal(mediaError({type,size:10*1024*1024}),'');
-  assert.ok(mediaError({type,size:10*1024*1024+1}));
+  assert.equal(mediaError({type,size:50*1024*1024}),'');
+  assert.ok(mediaError({type,size:50*1024*1024+1}));
  }
  for(const type of ['video/mp4','video/webm','video/quicktime']){
   assert.equal(mediaError({type,size:50*1024*1024}),'');
