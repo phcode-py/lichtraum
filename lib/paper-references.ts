@@ -1,5 +1,6 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {MAX_IMAGE_INPUT_BYTES,storedImageOk} from './image-policy.ts';
+import {MAX_VIDEO_INPUT_BYTES,storedVideoOk} from './video-policy.ts';
 export const REFERENCE_ONLY_CONTENT='[paper-reference:v1]';
 export const referenceCaption=(content:string,hasReference:boolean)=>hasReference&&content===REFERENCE_ONLY_CONTENT?'':content;
 export const REFERENCE_BUCKET='paper-references';
@@ -9,12 +10,11 @@ export const REFERENCE_ACCEPT=REFERENCE_IMAGE_ACCEPT+','+REFERENCE_VIDEO_ACCEPT;
 /** Largest original image a person can choose; it is shrunk before upload. */
 export const MAX_REFERENCE_SIZE=MAX_IMAGE_INPUT_BYTES;
 const TYPES=REFERENCE_ACCEPT.split(',');
-const VIDEO_EXT:Record<string,string>={'video/mp4':'.mp4','video/webm':'.webm','video/quicktime':'.mov'};
 export const referenceIsVideo=(key:string)=>/\.(mp4|webm|mov)$/.test(key);
 export type NoteRow={id:string;owner:string;author_name:string;content:string;created_at:string;updated_at?:string|null;image_key?:string|null};
 export function referenceError(file:{type:string;size:number}){
  if(!TYPES.includes(file.type))return 'Choose a JPG, PNG, WebP image or an MP4, MOV, WebM video.';
- if(!Number.isFinite(file.size)||file.size<=0||file.size>(file.type.startsWith('video/')?50*1024*1024:MAX_REFERENCE_SIZE))return file.type.startsWith('video/')?'Choose a video up to 50 MB.':'Choose an image up to 50 MB.';
+ if(!Number.isFinite(file.size)||file.size<=0||file.size>(file.type.startsWith('video/')?MAX_VIDEO_INPUT_BYTES:MAX_REFERENCE_SIZE))return file.type.startsWith('video/')?'Choose a video up to 1 GB.':'Choose an image up to 50 MB.';
  return '';
 }
 export function validReferenceKey(key:unknown,owner:string):key is string{
@@ -22,17 +22,19 @@ export function validReferenceKey(key:unknown,owner:string):key is string{
 }
 export async function referenceExists(db:SupabaseClient,key:string){
  const {data,error}=await db.storage.from(REFERENCE_BUCKET).info(key);
- return !error&&!!data&&typeof data.size==='number'&&typeof data.contentType==='string'&&(data.contentType.startsWith('video/')?!referenceError({size:data.size,type:data.contentType}):storedImageOk({size:data.size,type:data.contentType}))&&referenceIsVideo(key)===data.contentType.startsWith('video/');
+ return !error&&!!data&&typeof data.size==='number'&&typeof data.contentType==='string'&&(data.contentType.startsWith('video/')?TYPES.includes(data.contentType)&&storedVideoOk({size:data.size}):storedImageOk({size:data.size,type:data.contentType}))&&referenceIsVideo(key)===data.contentType.startsWith('video/');
 }
 export async function uploadPaperReference(file:File):Promise<string>{
  const problem=referenceError(file);if(problem)throw Error(problem);
- const [{createClient},{prepareImage}]=await Promise.all([import('./supabase/client'),import('./image')]);
+ const [{createClient},{prepareImage},{prepareVideo}]=await Promise.all([import('./supabase/client'),import('./image'),import('./video')]);
  const db=createClient();const {data:{user}}=await db.auth.getUser();
  if(!user)throw Error('Sign in to add a reference image.');
  // Same shrinking as atlas photos; PNG/WebP keep their format so line drawings stay lossless.
- const image=file.type.startsWith('video/')?file:await prepareImage(file);
- const key=`${user.id}/${crypto.randomUUID()}${VIDEO_EXT[file.type]??''}`;
- const {error}=await db.storage.from(REFERENCE_BUCKET).upload(key,image,{contentType:image.type,upsert:false});
+ // Videos are converted to a ≤1080p H.264 MP4, the same as atlas videos.
+ const video=file.type.startsWith('video/')?await prepareVideo(file):null;
+ const image=video?video.blob:await prepareImage(file);
+ const key=`${user.id}/${crypto.randomUUID()}${video?'.'+video.extension:''}`;
+ const {error}=await db.storage.from(REFERENCE_BUCKET).upload(key,image,{contentType:video?video.type:image.type,upsert:false});
  if(error)throw Error('Your reference file could not be uploaded. Please try again.');
  return key;
 }

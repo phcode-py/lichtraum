@@ -18,7 +18,7 @@ test('malformed and pasted markup is reduced to formatting tags without attribut
 });
 test('paper reference videos enforce type, size and ownership, and return playable signed media',async()=>{
  const key='owner/12345678-1234-1234-1234-123456789abc.mp4';
- assert.equal(referenceError({type:'video/mp4',size:50*1024*1024}),'');assert.ok(referenceError({type:'video/mp4',size:50*1024*1024+1}));assert.equal(referenceError({type:'image/png',size:11*1024*1024}),'');assert.ok(referenceError({type:'image/png',size:50*1024*1024+1}));assert.ok(referenceError({type:'text/html',size:100}));
+ assert.equal(referenceError({type:'video/mp4',size:50*1024*1024}),'');assert.ok(referenceError({type:'video/mp4',size:1024*1024*1024+1}));assert.equal(referenceError({type:'image/png',size:11*1024*1024}),'');assert.ok(referenceError({type:'image/png',size:50*1024*1024+1}));assert.ok(referenceError({type:'text/html',size:100}));
  assert.equal(validReferenceKey(key,'owner'),true);assert.equal(validReferenceKey(key,'other'),false);
  const db={storage:{from:()=>({info:async()=>({data:{size:100,contentType:'video/mp4'}}),createSignedUrls:async keys=>({data:keys.map(path=>({path,signedUrl:'https://preview.invalid/'+path}))})})}};
  assert.equal(await referenceExists(db,key),true);assert.equal(await referenceExists(db,key.replace('.mp4','')),false);

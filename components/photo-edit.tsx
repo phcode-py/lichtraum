@@ -33,7 +33,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
  const[time,setTime]=useState(initialTime);
  const[author,setAuthor]=useState(photo.author??'');
  const[walk,setWalk]=useState(photo.walk??''),[tags,setTags]=useState<PhotoTags>(photo.tags??emptyTags());
- const[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmDelete,setConfirmDelete]=useState(false);
+ const[busy,setBusy]=useState(false),[prep,setPrep]=useState<number|null>(null),[error,setError]=useState(''),[confirmDelete,setConfirmDelete]=useState(false);
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
  // A pin dropped on the big map becomes this photograph's new place.
  const pinned=pin?.point;
@@ -58,11 +58,11 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
  async function save(e:React.FormEvent){
   e.preventDefault();
   if(time&&(capturedAt===null||capturedAt>Date.now())){setError('Choose a valid date and time in the past.');return;}
-  setBusy(true);setError('');
+  setBusy(true);setPrep(null);setError('');
   let key='';
   try{
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
-   if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file);}
+   if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,user.id,file,setPrep);setPrep(null);}
    const timeChanged=capturedAt!==null&&(time!==initialTime||(moved&&!!photo.conditions));
    const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(author.trim()&&author.trim()!==(photo.author??'')?{author:author.trim()}:{}),...(timeChanged?{capturedAt}:{})};
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -99,7 +99,7 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
    {error&&<p className="form-error" role="alert">{error}</p>}
    <div className="photo-edit-actions">
     <button type="button" onClick={onCancel}>Cancel</button>
-    <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?'Saving…':'Save changes'}<ArrowUpRight size={14}/></button>
+    <button className="primary" disabled={busy||!title.trim()||(!!time&&capturedAt===null)}>{busy?(prep!==null?`Preparing video… ${Math.round(prep*100)}%`:'Saving…'):'Save changes'}<ArrowUpRight size={14}/></button>
    </div>
    {onDeleted&&<div className="photo-edit-delete">{confirmDelete?<><p>Delete this picture from the Light atlas? The photo file is removed too. This cannot be undone.</p><div><button type="button" onClick={()=>setConfirmDelete(false)}>Keep it</button><button type="button" className="danger" onClick={remove}>{busy?'Deleting…':'Delete picture'}</button></div></>:<button type="button" className="delete-icon" aria-label="Delete picture" title="Delete picture" onClick={()=>setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true"/></button>}</div>}
   </fieldset>

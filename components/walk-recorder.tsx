@@ -188,7 +188,7 @@ export default function WalkRecorder({walk,impressions,startPaused,onImpression,
   const supabase=createClient();let key='';
   try{
    const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');
-   key=await uploadMedia(supabase,user.id,file);
+   key=await uploadMedia(supabase,user.id,file,p=>setMessage(`Preparing video… ${Math.round(p*100)}%`));
    const number=String(impressions.length+1).padStart(2,'0');
    const r=await fetch('/api/photos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,capturedAt:at.capturedAt,timeSource:'camera',title:`Impression ${number}`,caption:'',place:nearestPlace(at.lat,at.lng),lat:at.lat,lng:at.lng,category:'Light',walk:walk.id,shared:walk.shared})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'The impression could not be saved.');

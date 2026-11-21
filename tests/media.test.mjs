@@ -10,8 +10,8 @@ test('photo and video limits reject unsupported, oversized and empty files',()=>
   assert.ok(mediaError({type,size:50*1024*1024+1}));
  }
  for(const type of ['video/mp4','video/webm','video/quicktime']){
-  assert.equal(mediaError({type,size:50*1024*1024}),'');
-  assert.ok(mediaError({type,size:50*1024*1024+1}));
+  assert.equal(mediaError({type,size:1024*1024*1024}),'');
+  assert.ok(mediaError({type,size:1024*1024*1024+1}));
  }
  assert.ok(mediaError({type:'image/jpeg',size:0}));
  assert.ok(mediaError({type:'text/html',size:100}));
