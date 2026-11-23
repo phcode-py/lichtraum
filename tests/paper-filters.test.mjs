@@ -17,3 +17,18 @@ test('older untagged sheets remain visible and ordinary material defaults correc
  const f=emptyPaperFilters();assert.equal(matches({title:'Old note'},undefined,f),true);f.material='opaque';f.untagged=true;assert.equal(matches({title:'Old note'},undefined,f),true);assert.equal(matches(paper,tags,f),false);
  f.material='all';f.untagged=false;f.tags.imageTypes=['reflections-water'];assert.equal(matches({title:'Old note'},undefined,f),false);assert.equal(paperFilterCount(f),1);
 });
+
+test('photo preview combines atlas tags and ignores paper-only section/material choices',async()=>{
+ const {filterPaperPhotos,hasPhotoPaperFilters}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+ const photo={id:'match',title:'Water',caption:'',place:'River',lat:47.37,lng:8.54,url:'/sample',createdAt:1,tags};
+ const f=emptyPaperFilters();f.material='tracing';f.group='messages';assert.equal(hasPhotoPaperFilters(f),false);
+ f.tags={...tags,imageTypes:['reflections-water','light-scattering']};assert.equal(hasPhotoPaperFilters(f),true);
+ assert.deepEqual(filterPaperPhotos([photo,{...photo,id:'wrong-area',tags:{...tags,area:'industrial'}},{...photo,id:'external',source:'https://example.test'}],f).map(p=>p.id),['match']);
+ f.tags.weather=['windy'];assert.equal(filterPaperPhotos([photo],f).length,0);
+});
+test('photo preview uses saved weather/time and keeps untagged selections honest',async()=>{
+ const {filterPaperPhotos}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+ const photo={id:'saved',title:'Morning',caption:'',place:'River',lat:47.37,lng:8.54,url:'/sample',createdAt:1,conditions:{capturedAt:Date.parse('2026-11-19T09:00:00Z'),sun:{elevation:15,azimuth:130},weather:{cloudCover:10,humidity:85,precipitation:0,windSpeed:2}}};
+ const f=emptyPaperFilters();f.tags.weather=['humid'];f.tags.timeOfDay='morning';assert.equal(filterPaperPhotos([photo],f).length,1);
+ f.tags=emptyPaperFilters().tags;f.untagged=true;assert.deepEqual(filterPaperPhotos([photo,{...photo,id:'tagged',tags}],f).map(p=>p.id),['saved']);
+});

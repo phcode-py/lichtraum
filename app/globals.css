@@ -1418,3 +1418,14 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 
 /* New pictures use the same quiet save action as the image editor. */
 .workspace .upload-panel .save-button{display:flex;justify-content:flex-end;width:auto;margin:20px 0 0 auto;gap:8px}
+
+/* A temporary reference sheet links the filtered wall back to the atlas. */
+.correspondence-board .atlas-preview-paper .paper-heading{padding-bottom:20px}
+.correspondence-board .atlas-preview-paper .atlas-preview-tags{margin:14px 0 0;color:#8b9082;font:10px/1.65 'Courier New',Courier,monospace!important;text-transform:none;letter-spacing:0}
+.atlas-preview-results{flex:1;min-height:0;padding-bottom:8px}
+.atlas-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:9px}
+.atlas-preview-grid>button{position:relative;display:block;width:100%;aspect-ratio:1;padding:0;overflow:hidden;background:#e9ebe4}
+.atlas-preview-grid>button>img,.atlas-preview-grid .atlas-video,.atlas-preview-grid .atlas-video>video{display:block;width:100%;height:100%;object-fit:cover}
+.atlas-preview-grid .video-label{font-size:9px}
+.atlas-preview-grid>button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.atlas-preview-empty{margin:8px 0;color:#8b9082;font:11px/1.7 'Courier New',Courier,monospace}

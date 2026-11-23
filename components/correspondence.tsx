@@ -1,5 +1,6 @@
 'use client';
 import {ImageViewButton} from './image-viewer';
+import AtlasMedia from './atlas-media';
 import PaperResize,{paperSize,type PaperSize} from './paper-resize';
 import {useContext,useCallback,useEffect,useRef,useState,type CSSProperties,type ReactNode,type PointerEvent as ReactPointerEvent,type KeyboardEvent as ReactKeyboardEvent} from 'react';
 import {Camera,Video,Pencil,Plus,SlidersHorizontal,Trash2,X} from 'lucide-react';
@@ -9,8 +10,8 @@ import {REFERENCE_IMAGE_ACCEPT,REFERENCE_VIDEO_ACCEPT,referenceError,uploadPaper
 import PaperTextEditor from './paper-text-editor';
 import PaperTags from './paper-tags';
 import PaperFilterOptions from './paper-filters';
-import {emptyTags,type PhotoTags} from '@/lib/gallery';
-import {emptyPaperFilters,paperFilterCount,paperMatchesFilters,type PaperFilters} from '@/lib/paper-filters';
+import {AREAS,IMAGE_TYPES,TIMES,WEATHER,emptyTags,type GalleryPhoto,type PhotoTags} from '@/lib/gallery';
+import {emptyPaperFilters,paperFilterCount,paperMatchesFilters,hasPhotoPaperFilters,filterPaperPhotos,type PaperFilters} from '@/lib/paper-filters';
 import {findPaperSpace} from '@/lib/paper-placement';
 import {paperTextPlain} from '@/lib/paper-text';
 
@@ -40,24 +41,25 @@ function PaperMaterialControl({value,onChange,disabled=false}:{value:PaperMateri
  return <fieldset className="paper-material-toggle" disabled={disabled}><legend className="sr-only">Paper type</legend><button type="button" aria-pressed={value==='opaque'} onClick={()=>onChange('opaque')}>paper</button><button type="button" aria-pressed={value==='tracing'} onClick={()=>onChange('tracing')}>tracing paper</button></fieldset>;
 }
 
-function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,size,onResize,onSaveSize,onMove,onSave,onFocus,layer,children,onEdit,titleEditor,editor,tagControl,material='opaque'}:{size?:PaperSize;onResize:(size:PaperSize)=>void;onSaveSize:(size:PaperSize)=>void;tagControl?:ReactNode;description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit:()=>void;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
+function Receipt({createdAt,updatedAt,id,title,subtitle,description,position,size,onResize,onSaveSize,onMove,onSave,onFocus,layer,children,onEdit,onClose,transient=false,titleEditor,editor,tagControl,material='opaque'}:{size?:PaperSize;onResize:(size:PaperSize)=>void;onSaveSize:(size:PaperSize)=>void;tagControl?:ReactNode;description?:string;createdAt?:number;updatedAt?:number;titleEditor?:ReactNode;editor?:ReactNode;onEdit?:()=>void;onClose?:()=>void;transient?:boolean;material?:PaperMaterial;id:string;title:string;subtitle:string;position:Position;onMove:(p:Position)=>void;onSave:(p:Position)=>void;onFocus:()=>void;layer:number;children:ReactNode}){
  const drag=useRef<{pointer:number;x:number;y:number;origin:Position;latest:Position}|null>(null);
  function start(e:ReactPointerEvent<HTMLButtonElement>){if(e.button!==0)return;e.currentTarget.setPointerCapture(e.pointerId);drag.current={pointer:e.pointerId,x:e.clientX,y:e.clientY,origin:position,latest:position};onFocus()}
  function move(e:ReactPointerEvent<HTMLButtonElement>){const d=drag.current;if(!d||d.pointer!==e.pointerId)return;const p={x:Math.max(0,Math.min(10000,d.origin.x+e.clientX-d.x)),y:Math.max(0,Math.min(10000,d.origin.y+e.clientY-d.y))};d.latest=p;onMove(p)}
  function finish(e:ReactPointerEvent<HTMLButtonElement>){const d=drag.current;if(!d||d.pointer!==e.pointerId)return;drag.current=null;if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);if(d.latest.x!==d.origin.x||d.latest.y!==d.origin.y)onSave(d.latest)}
  function keyboard(e:ReactKeyboardEvent<HTMLButtonElement>){const directions:Record<string,Position>={ArrowLeft:{x:-20,y:0},ArrowRight:{x:20,y:0},ArrowUp:{x:0,y:-20},ArrowDown:{x:0,y:20}};const d=directions[e.key];if(!d)return;e.preventDefault();onFocus();const p={x:Math.max(0,Math.min(10000,position.x+d.x)),y:Math.max(0,Math.min(10000,position.y+d.y))};onMove(p);onSave(p)}
- return <article id={'paper-'+id} className={'board-paper'+(material==='tracing'?' tracing-paper':'')} style={{left:position.x,top:position.y,zIndex:layer,...(size?{width:size.width,height:size.height,minHeight:0}:{})}} onPointerDown={onFocus} aria-label={title}>
+ return <article id={'paper-'+id} className={'board-paper'+(material==='tracing'?' tracing-paper':'')+(transient?' atlas-preview-paper':'')} style={{left:position.x,top:position.y,zIndex:layer,...(size?{width:size.width,height:size.height,minHeight:0}:{})}} onPointerDown={onFocus} aria-label={title}>
   {paperTape(id).map(({clipPath,...style},index)=><button key={index} type="button" className="paper-tape" style={style} aria-label={`Move ${title} using sticker ${index+1}`} title="Drag to move · arrow keys also work" onPointerDown={start} onPointerMove={move} onPointerUp={finish} onPointerCancel={finish} onKeyDown={keyboard}><span className="paper-tape-strip" style={{clipPath}}/></button>)}
-  <button className="paper-edit-button" type="button" aria-label={'Edit '+title} onClick={onEdit}><Pencil size={14}/></button>
-  <div className="paper-content"><header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2><div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>{description&&<p className="paper-chat-description">{description}</p>}{tagControl}</header>{children}{editor}</div><PaperResize title={title} onResize={onResize} onSave={onSaveSize} onFocus={onFocus}/>
+  {onClose?<button className="paper-edit-button" type="button" aria-label="Close matching atlas pictures" onClick={onClose}><X size={15}/></button>:onEdit&&<button className="paper-edit-button" type="button" aria-label={'Edit '+title} onClick={onEdit}><Pencil size={14}/></button>}
+  <div className="paper-content"><header className="paper-heading"><p>{subtitle}</p><h2>{titleEditor??title}</h2>{!transient&&<div className="paper-dates"><span><span className="paper-date-label">created</span><time>{createdAt?new Date(createdAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span><span><span className="paper-date-label">last changed</span><time>{updatedAt?new Date(updatedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</time></span></div>}{description&&<p className="paper-chat-description">{description}</p>}{tagControl}</header>{children}{editor}</div><PaperResize title={title} onResize={onResize} onSave={onSaveSize} onFocus={onFocus}/>
  </article>;
 }
 
-export default function Correspondence({localPreview=false}:{localPreview?:boolean}={}){
+export default function Correspondence({localPreview=false,photos=[],photosLoading=false,photoError='',onPhoto}:{localPreview?:boolean;photos?:GalleryPhoto[];photosLoading?:boolean;photoError?:string;onPhoto?:(photo:GalleryPhoto)=>void}={}){
  const[sizes,setSizes]=useState<Record<string,PaperSize>>({});
  useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('lichtraum-paper-sizes-v1')||'{}');if(!saved||typeof saved!=='object'||Array.isArray(saved))return;const valid:Record<string,PaperSize>={};for(const [id,value] of Object.entries(saved)){const size=value as Partial<PaperSize>|null;if(size&&typeof size.width==='number'&&typeof size.height==='number'&&Number.isFinite(size.width)&&Number.isFinite(size.height))valid[id]=paperSize(size.width,size.height)}setSizes(valid)}catch{}},[]);
  function resize(id:string,size:PaperSize){setSizes(current=>({...current,[id]:size}))}
  function saveSize(id:string,size:PaperSize){resize(id,size);try{const saved=JSON.parse(localStorage.getItem('lichtraum-paper-sizes-v1')||'{}');localStorage.setItem('lichtraum-paper-sizes-v1',JSON.stringify({...saved,[id]:size}))}catch{}}
+ const[atlasDismissed,setAtlasDismissed]=useState(false),[atlasPosition,setAtlasPosition]=useState<Position>({x:56,y:50}),[atlasSize,setAtlasSize]=useState<PaperSize>({width:420,height:500});
  const entryEditors=useRef(new Map<string,EntriesHandle>());
  const[roomDates,setRoomDates]=useState<ChatDates>({});
  const updateRoomDates=useCallback((next:ChatDates)=>setRoomDates(current=>current.createdAt===next.createdAt&&current.updatedAt===next.updatedAt?current:next),[]);
@@ -92,7 +94,12 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
  useEffect(()=>{if(!filterOpen)return;function outside(e:globalThis.PointerEvent){if(!filterControl.current?.contains(e.target as Node))setFilterOpen(false)}document.addEventListener('pointerdown',outside);return()=>document.removeEventListener('pointerdown',outside)},[filterOpen]);
  function filterPapers(value:PaperFilters){
   if(editing){setNotice('Save or cancel the current paper first.');return;}
-  setFilters(value);
+  const hadPreview=hasPhotoPaperFilters(filters)&&!atlasDismissed;
+  setFilters(value);setAtlasDismissed(false);
+  if(hasPhotoPaperFilters(value)){
+   if(!hadPreview){const view=scroller.current,width=view?.clientWidth??900;setAtlasSize(size=>({...size,width:Math.max(240,Math.min(size.width,width-64))}));setAtlasPosition({x:(view?.scrollLeft??0)+Math.max(32,width-460),y:(view?.scrollTop??0)+42})}
+   focus('atlas-filter-preview');return;
+  }
   const room={title:settings.room?.title??'Messages',category:'messages' as const,material:settings.room?.material};
   const first=paperMatchesFilters(room,paperTags.room,value)?'room':papers.find(p=>paperMatchesFilters(p,paperTags[p.id],value))?.id;
   const position=first?positions[first]:undefined;
@@ -167,7 +174,10 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
   requestAnimationFrame(()=>view?.scrollTo({left:Math.max(0,position.x-32),top:Math.max(0,position.y-32),behavior:'smooth'}));
  }
  function chooseDraftFile(file?:File){if(!file||saving)return;const problem=referenceError(file);if(problem){setError(problem);return;}setDraftFile(file);draftUpload.current=null;setError('')}
- const canvasWidth=Math.max(1230,...Object.entries(positions).map(([id,p])=>p.x+(sizes[id]?.width??420)+80)),canvasHeight=Math.max(950,...Object.entries(positions).map(([id,p])=>p.y+(sizes[id]?.height??900)+80));
+ const matchingPhotos=filterPaperPhotos(photos,filters),showAtlas=hasPhotoPaperFilters(filters)&&!atlasDismissed;
+ const previewLabels:string[]=[...IMAGE_TYPES.filter(t=>filters.tags.imageTypes.includes(t.id)),...TIMES.filter(t=>filters.tags.timeOfDay===t.id),...WEATHER.filter(t=>filters.tags.weather.includes(t.id)),...AREAS.filter(t=>filters.tags.area===t.id)].map(t=>t.label);
+ if(filters.untagged)previewLabels.push('Without tags');
+ const canvasWidth=Math.max(1230,showAtlas?atlasPosition.x+atlasSize.width+60:0,...Object.entries(positions).map(([id,p])=>p.x+(sizes[id]?.width??420)+80)),canvasHeight=Math.max(950,showAtlas?atlasPosition.y+atlasSize.height+60:0,...Object.entries(positions).map(([id,p])=>p.y+(sizes[id]?.height??900)+80));
  const receipt=(id:string,name:string,subtitle:string,children:ReactNode,sheetMaterial:PaperMaterial='opaque')=>{
   const active=editing?.id===id;
   return <Receipt
@@ -191,6 +201,12 @@ export default function Correspondence({localPreview=false}:{localPreview?:boole
 
   {(error||notice)&&<div className="board-notice" role="status">{error||notice}<button onClick={load}>refresh</button></div>}
   <div className="board-scroll" ref={scroller}><div className="board-canvas" style={{width:canvasWidth,height:canvasHeight}}>
+   {showAtlas&&<Receipt id="atlas-filter-preview" title="Light atlas" subtitle={photosLoading&&!photos.length?'Opening pictures…':`${matchingPhotos.length} ${matchingPhotos.length===1?'picture':'pictures'}`} transient position={atlasPosition} size={atlasSize} onResize={setAtlasSize} onSaveSize={setAtlasSize} onMove={setAtlasPosition} onSave={setAtlasPosition} onFocus={()=>focus('atlas-filter-preview')} layer={layers['atlas-filter-preview']??2} onClose={()=>setAtlasDismissed(true)} tagControl={<p className="atlas-preview-tags">{previewLabels.join(' · ')}</p>}>
+    <div className="atlas-preview-results" aria-label="Matching atlas pictures" aria-live="polite">
+     {photoError?<p className="atlas-preview-empty" role="alert">The atlas pictures could not be loaded. Reopen Working notes to try again.</p>:photosLoading&&!photos.length?<p className="atlas-preview-empty">Opening the light atlas…</p>:matchingPhotos.length?<div className="atlas-preview-grid">{matchingPhotos.map(photo=><button type="button" key={photo.id} title={photo.title||photo.place} aria-label={'Open '+(photo.title.trim()||'photograph')+' from matching pictures'} onClick={()=>onPhoto?.(photo)}><AtlasMedia url={photo.url} title={photo.title} mediaType={photo.mediaType}/></button>)}</div>:<p className="atlas-preview-empty">No pictures match this selection.</p>}
+    </div>
+   </Receipt>}
+
    {paperMatchesFilters({title:settings.room?.title??'Messages',category:'messages',material:settings.room?.material},paperTags.room,filters)&&receipt('room',settings.room?.title??'Messages','000',<Entries endpoint="/api/community" localPreview={localPreview} chat editing={editing?.id==='room'} disabled={saving} onDatesChange={updateRoomDates} ref={handle=>{if(handle)entryEditors.current.set('room',handle);else entryEditors.current.delete('room')}}/>,settings.room?.material)}
 
    {papers.filter(p=>p.id!==creation.current?.id).map((p,i)=>({p,i})).filter(({p})=>paperMatchesFilters(p,paperTags[p.id],filters)).map(({p,i})=>receipt(p.id,p.title,`${String(i+3).padStart(2,'0')} / ${p.shared?'shared':'only you'} / ${p.author}`,<Entries endpoint={'/api/papers/'+p.id+'/entries'} onChanged={load} localPreview={localPreview} editing={editing?.id===p.id} disabled={saving} ref={handle=>{if(handle)entryEditors.current.set(p.id,handle);else entryEditors.current.delete(p.id)}}/>,p.material))}
