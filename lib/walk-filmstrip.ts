@@ -1,6 +1,7 @@
 import {metres,type Walk} from './walks';
+import {newestPhotoFirst} from './gallery';
 type Moment={id:string;lat:number;lng:number;createdAt:number;conditions?:{capturedAt:number}|null};
-/** Route order is independent of upload order. Pauses do not add a fictitious connecting leg. */
+/** Keep route distances, but show the most recently captured picture first. */
 export function sequenceWalkPhotos<T extends Moment>(walk:Pick<Walk,'path'>,photos:T[]):{photo:T;distance:number|null}[]{
  const legs:{a:[number,number];b:[number,number];length:number;start:number}[]=[];let travelled=0;
  for(let i=1;i<walk.path.length;i++){
@@ -8,7 +9,6 @@ export function sequenceWalkPhotos<T extends Moment>(walk:Pick<Walk,'path'>,phot
   const length=metres([a[0],a[1]],[b[0],b[1]]);if(!length)continue;
   legs.push({a:[a[0],a[1]],b:[b[0],b[1]],length,start:travelled});travelled+=length;
  }
- const time=(p:T)=>p.conditions?.capturedAt??p.createdAt;
  return photos.map(photo=>{
   let nearest=Infinity,distance:number|null=null;
   for(const leg of legs){
@@ -19,5 +19,5 @@ export function sequenceWalkPhotos<T extends Moment>(walk:Pick<Walk,'path'>,phot
    if(squared<nearest){nearest=squared;distance=leg.start+leg.length*fraction;}
   }
   return {photo,distance};
- }).sort((a,b)=>(a.distance!==null&&b.distance!==null?a.distance-b.distance:0)||time(a.photo)-time(b.photo)||a.photo.id.localeCompare(b.photo.id));
+ }).sort((a,b)=>newestPhotoFirst(a.photo,b.photo));
 }

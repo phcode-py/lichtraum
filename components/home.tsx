@@ -28,7 +28,7 @@ import {ZURICH,parseZurichDateTime,zurichDateTime} from '@/lib/sun';
 import PhotoGallery from './photo-gallery';
 import GalleryPhotoDetail from './gallery-photo-detail';
 import PhotoTagEditor,{TagChoices} from './photo-tags';
-import {canEditPhoto,emptyTags,type GalleryPhoto,type PhotoTags} from '@/lib/gallery';
+import {canEditPhoto,newestPhotoFirst,emptyTags,type GalleryPhoto,type PhotoTags} from '@/lib/gallery';
 import {defaultWalkTitle,segments,type Walk} from '@/lib/walks';
 import {createClient} from '@/lib/supabase/client';
 import {districts,nearestPlace,places as placeList,squares} from '@/lib/places';
@@ -89,7 +89,7 @@ export default function Home({localPreview=false,initialSection='walks'}:{localP
  useEffect(()=>{if(!file){setPreview('');return;}const u=URL.createObjectURL(file);setPreview(u);return()=>URL.revokeObjectURL(u)},[file]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),4500);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{function escape(e:KeyboardEvent){if(e.key==='Escape'){if(!busy){setAdding(false);setSelected(null);setConfirmDelete(false);setEditing(false);setSunOpen(false);setRainOpen(false)}}}window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape)},[busy]);
- const all=tab==='mine'?photos.filter(p=>p.mine!==false):photos;const visible=tab==='walks'?photos.filter(p=>!!selectedWalk&&p.walk===selectedWalk):all.filter(p=>`${p.title} ${p.place} ${p.caption}`.toLowerCase().includes(query.toLowerCase()));
+ const all=tab==='mine'?photos.filter(p=>p.mine!==false):photos;const visible=tab==='walks'?photos.filter(p=>!!selectedWalk&&p.walk===selectedWalk):all.filter(p=>`${p.title} ${p.place} ${p.caption}`.toLowerCase().includes(query.toLowerCase())).sort(newestPhotoFirst);
  function start(){setWalkTracingVisible(false);if(tab==='gallery')setTab('explore');setPhotoTags(emptyTags());setSunOpen(false);setSunPicking(false);setCaptureTime(zurichDateTime(Date.now()));setShared(false);setPhotoWalk('');setTakenBy('');setAdding(true);setSelected(null);setPoint(null);setFile(null);setTitle('');setCaption('');setPlace('');setError('');setMobileView(tab==='walks'?'photos':'map')}
  async function chooseFile(f?:File){if(!f||busy)return;let problem=mediaError(f);if(!problem&&f.type.startsWith('video/')){const {readVideoDuration}=await import('@/lib/video');problem=videoDurationError(await readVideoDuration(f));}
   // Shown inside the file card as well, so a rejected file is never silently ignored.

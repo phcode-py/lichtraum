@@ -31,6 +31,12 @@ export function parseTags(value:unknown):PhotoTags|null{
 export function captureTime(photo:GalleryPhoto):number|null{
  const t=photo.conditions?.capturedAt;return typeof t==='number'&&Number.isFinite(t)?t:null;
 }
+/** Newest capture first; older unrecorded pictures retain an upload-time fallback. */
+export function newestPhotoFirst(a:{id:string;createdAt:number;conditions?:{capturedAt:number}|null},b:{id:string;createdAt:number;conditions?:{capturedAt:number}|null}){
+ const time=(p:typeof a)=>typeof p.conditions?.capturedAt==='number'&&Number.isFinite(p.conditions.capturedAt)?p.conditions.capturedAt:p.createdAt;
+ return time(b)-time(a)||a.id.localeCompare(b.id);
+}
+
 export function timeTag(photo:GalleryPhoto):string{
  if(photo.tags?.timeOfDay)return photo.tags.timeOfDay;
  const t=captureTime(photo);if(t===null)return '';

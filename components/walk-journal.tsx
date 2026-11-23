@@ -7,7 +7,7 @@ import PhotoEdit from './photo-edit';
 import WalkActions from './walk-actions';
 import WalkEditor from './walk-editor';
 import AtlasPictureCard from './atlas-picture-card';
-import {canEditPhoto,type GalleryPhoto} from '@/lib/gallery';
+import {canEditPhoto,newestPhotoFirst,type GalleryPhoto} from '@/lib/gallery';
 import {formatDuration,type Walk} from '@/lib/walks';
 
 export type Impression=Omit<GalleryPhoto,'caption'|'lat'|'lng'>&{caption?:string;lat?:number;lng?:number};
@@ -23,7 +23,7 @@ export default function WalkJournal({onOpenPicture,tracingVisible,onTracingToggl
  const walk=walks.find(w=>w.id===selected);
 
  if(walk){
-  const pins=impressions.filter(p=>p.walk===walk.id).sort((a,b)=>a.createdAt-b.createdAt);
+  const pins=impressions.filter(p=>p.walk===walk.id).sort(newestPhotoFirst);
   const n=walks.length-walks.indexOf(walk);
   return <div className="walk-journal walk-detail">
    <button className="walk-back" aria-label="Back to all walks" title="Back to all walks" onClick={()=>{setEditing(null);onSelect(null)}}><ArrowLeft size={17}/></button>

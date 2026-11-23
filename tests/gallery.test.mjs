@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {IMAGE_TYPES,emptyTags,emptyFilters,filterGallery,parseTags,timeTag,weatherTags} from '../lib/gallery.ts';
+import {newestPhotoFirst,IMAGE_TYPES,emptyTags,emptyFilters,filterGallery,parseTags,timeTag,weatherTags} from '../lib/gallery.ts';
 const photo=(id,extra={})=>({id,title:id,caption:'',place:'Zürich',lat:47.37,lng:8.54,url:'',createdAt:Date.parse('2026-11-17T10:00:00Z'),...extra});
 const conditions=(capturedAt,elevation=20,weather=null)=>({capturedAt:Date.parse(capturedAt),lat:47.37,lng:8.54,timeSource:'chosen',sun:{azimuth:180,elevation},weather,weatherStatus:weather?'available':'unavailable'});
 
@@ -50,4 +50,11 @@ test('old untagged photos remain visible and can be found by unknown data and le
 test('search finds the German taxonomy as well as places, titles and authors',()=>{
  const p=photo('a',{tags:{...emptyTags(),imageTypes:['reflections-water']}});
  assert.equal(filterGallery([p],{...emptyFilters(),query:'Spiegelungen im Wasser'},'uploaded-newest').length,1);
+});
+
+
+test('newest capture order is stable and falls back only when a capture time is unknown',()=>{
+ const pictures=[{id:'old',createdAt:999,conditions:{capturedAt:10}},{id:'b',createdAt:1,conditions:{capturedAt:30}},{id:'a',createdAt:2,conditions:{capturedAt:30}},{id:'unknown',createdAt:20},{id:'invalid',createdAt:5,conditions:{capturedAt:NaN}}];
+ assert.deepEqual([...pictures].sort(newestPhotoFirst).map(p=>p.id),['a','b','unknown','old','invalid']);
+ assert.equal(pictures[0].id,'old');
 });
