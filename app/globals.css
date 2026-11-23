@@ -1442,3 +1442,7 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .gallery-lightbox-notes .sun-angles strong span{font-size:12px}
 .gallery-lightbox-notes .sun-angles>div{display:flex;flex-direction:column}
 .gallery-lightbox-notes .sun-angles>div>span{order:1;font:400 8px/1.6 'Courier New',Courier,monospace;color:#a2a296;margin:0 0 2px}
+
+/* While a route is being drawn, pictures step back: see-through and click-through, so the line beneath them can be edited. */
+.route-drawing .photo-marker,.route-drawing .chosen-point{opacity:.28!important;pointer-events:none!important;transition:opacity .2s}
+.walk-map-drawing-tools>span small{display:block;margin-top:3px;font:400 9px/1.5 'Courier New',Courier,monospace;color:#8b8b81}
