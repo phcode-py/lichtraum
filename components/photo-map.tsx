@@ -22,8 +22,8 @@ export const mapStyle:StyleSpecification={version:8,sources:{city:{type:'vector'
 ]};
 /** The sun drawn as a shape, so phones never swap in their colour emoji. */
 const SUN_GLYPH='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 1.8v2.6M12 19.6v2.6M1.8 12h2.6M19.6 12h2.6M4.8 4.8l1.85 1.85M17.35 17.35l1.85 1.85M4.8 19.2l1.85-1.85M17.35 6.65l1.85-1.85"/></g></svg>';
-export type MapRoute={id:string;lines:[number,number][][];active:boolean};
-export default function PhotoMap({tracingWalkId=null,tracingVisible=false,onTracingHide,routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,onCurrentLocation,sunPoint=ZURICH,onSunPoint,sunPicking=false,rainOpen=false,onRainToggle,rainRadar=null,rainFrame=0}:{rainOpen?:boolean;onRainToggle?:()=>void;rainRadar?:RainRadar|null;rainFrame?:number;tracingWalkId?:string|null;tracingVisible?:boolean;onTracingHide?:()=>void;routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;onCurrentLocation?:(p:{lat:number;lng:number})=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
+export type MapRoute={id:string;lines:[number,number][][];active:boolean;title?:string};
+export default function PhotoMap({tracingWalkId=null,tracingVisible=false,onTracingHide,routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,onCurrentLocation,sunPoint=ZURICH,onSunPoint,sunPicking=false,onRouteSelect,rainOpen=false,onRainToggle,rainRadar=null,rainFrame=0}:{onRouteSelect?:(id:string)=>void;rainOpen?:boolean;onRainToggle?:()=>void;rainRadar?:RainRadar|null;rainFrame?:number;tracingWalkId?:string|null;tracingVisible?:boolean;onTracingHide?:()=>void;routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;onCurrentLocation?:(p:{lat:number;lng:number})=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
  const element=useRef<HTMLDivElement>(null),map=useRef<Map|null>(null),lib=useRef<typeof import('maplibre-gl')|null>(null),markers=useRef<Marker[]>([]),labels=useRef<Marker[]>([]),pick=useRef(picking),choose=useRef(onPoint),select=useRef(onSelect);const[ready,setReady]=useState(0),[mapError,setMapError]=useState(false),[bearing,setBearing]=useState(0);
  const getMap=useCallback(()=>map.current,[]);
  const routeFocus=useRef<number|null>(null);
@@ -60,16 +60,39 @@ export default function PhotoMap({tracingWalkId=null,tracingVisible=false,onTrac
  // Walk routes: the active walk in royal blue, others in light blue.
  const activeRoute=routes.find(r=>r.active)?.id??'';
  useEffect(()=>{const m=map.current;if(!ready||!m)return;
-  const data={type:'FeatureCollection' as const,features:routes.filter(r=>r.lines.length).map(r=>({type:'Feature' as const,properties:{active:r.active},geometry:{type:'MultiLineString' as const,coordinates:r.lines}}))};
+  const data={type:'FeatureCollection' as const,features:routes.filter(r=>r.lines.length).map(r=>({type:'Feature' as const,properties:{id:r.id,active:r.active,title:r.title??''},geometry:{type:'MultiLineString' as const,coordinates:r.lines}}))};
   const source=m.getSource('walk-routes') as GeoJSONSource|undefined;
   if(source)source.setData(data);
-  else{m.addSource('walk-routes',{type:'geojson',data});
-   m.addLayer({id:'walk-routes-casing',type:'line',source:'walk-routes',filter:['get','active'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':8}});
+  else{m.addSource('walk-routes',{type:'geojson',data,promoteId:'id'});
+   // A walk under the pointer is drawn like the open walk: white edge, royal blue, thicker.
+   m.addLayer({id:'walk-routes-casing',type:'line',source:'walk-routes',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#fff','line-width':8,'line-opacity':['case',['any',['get','active'],['boolean',['feature-state','hover'],false]],1,0]}});
    m.addLayer({id:'walk-routes-line',type:'line',source:'walk-routes',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':['case',['get','active'],'#2446e8','#91b6ff'],'line-width':['case',['get','active'],3.5,2],'line-opacity':1}});}
-  m.setPaintProperty('walk-routes-line','line-color',['case',['get','active'],'#2446e8','#91b6ff']);
-  m.setPaintProperty('walk-routes-line','line-width',['case',['get','active'],3.5,2]);
+  const lit=['any',['get','active'],['boolean',['feature-state','hover'],false]];
+  m.setPaintProperty('walk-routes-line','line-color',['case',lit,'#2446e8','#91b6ff']);
+  m.setPaintProperty('walk-routes-line','line-width',['case',lit,3.5,2]);
+  // A wide invisible line makes the thin routes easy to point at.
+  if(!m.getLayer('walk-routes-hit'))m.addLayer({id:'walk-routes-hit',type:'line',source:'walk-routes',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#000','line-width':16,'line-opacity':0}});
   m.setPaintProperty('walk-routes-line','line-opacity',1);
  },[ready,routes]);
+ // Pointing at a walk highlights it and names it; clicking opens it.
+ const routeSelect=useRef(onRouteSelect),routeDrawing=useRef(false);
+ useEffect(()=>{routeSelect.current=onRouteSelect;routeDrawing.current=!!routeDraft?.picking||!!picking||!!sunPicking},[onRouteSelect,routeDraft,picking,sunPicking]);
+ useEffect(()=>{const m=map.current;if(!ready||!m)return;
+  let hovered:string|null=null;
+  const label=document.createElement('div');label.className='walk-route-label';label.hidden=true;m.getContainer().append(label);
+  const clear=()=>{if(hovered!==null&&m.getSource('walk-routes'))m.setFeatureState({source:'walk-routes',id:hovered},{hover:false});hovered=null;label.hidden=true;m.getCanvas().style.cursor=''};
+  const move=(e:import('maplibre-gl').MapLayerMouseEvent)=>{
+   if(routeDrawing.current){clear();return;}
+   const f=e.features?.[0],id=f?.properties?.id as string|undefined;if(!id)return;
+   if(hovered!==id){clear();hovered=id;m.setFeatureState({source:'walk-routes',id},{hover:true});}
+   label.textContent=(f?.properties?.title as string)||'Untitled walk';label.hidden=false;
+   label.style.transform=`translate(${e.point.x+14}px,${e.point.y-30}px)`;m.getCanvas().style.cursor='pointer';
+  };
+  const click=(e:import('maplibre-gl').MapLayerMouseEvent)=>{const id=e.features?.[0]?.properties?.id as string|undefined;if(id&&!routeDrawing.current&&routeSelect.current){clear();routeSelect.current(id)}};
+  const attach=()=>{if(!m.getLayer('walk-routes-hit'))return false;m.on('mousemove','walk-routes-hit',move);m.on('mouseleave','walk-routes-hit',clear);m.on('click','walk-routes-hit',click);return true};
+  let attached=attach();const retry=()=>{if(!attached)attached=attach()};m.on('styledata',retry);
+  return()=>{m.off('mousemove','walk-routes-hit',move);m.off('mouseleave','walk-routes-hit',clear);m.off('click','walk-routes-hit',click);m.off('styledata',retry);label.remove()};
+ },[ready]);
  useEffect(()=>{const m=map.current,r=routes.find(r=>r.active);if(!ready||!m||!r)return;const pts=r.lines.flat();if(!pts.length)return;
   const lng=pts.map(p=>p[0]),lat=pts.map(p=>p[1]);
   m.fitBounds([[Math.min(...lng),Math.min(...lat)],[Math.max(...lng),Math.max(...lat)]] as LngLatBoundsLike,{padding:{top:90,right:70,bottom:110,left:70},maxZoom:16.5,duration:650});
