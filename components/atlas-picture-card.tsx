@@ -10,7 +10,7 @@ import PhotoInformation from './photo-information';
 import {useImageViewer} from './image-viewer';
 
 /** The atlas stays image-first; recorded information unfolds only on request. */
-export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemove,favourite=false,onFavourite}:{photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void;favourite?:boolean;onFavourite?:()=>void}){
+export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemove,favourite=false,favouriteBy='',onFavourite}:{photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void;favourite?:boolean;favouriteBy?:string;onFavourite?:()=>void}){
  const openImage=useImageViewer();
  const[tracing,setTracing]=useState(false),[playing,setPlaying]=useState(false);
  const detailsId='atlas-info-'+photo.id;
@@ -24,7 +24,7 @@ export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemov
    <PhotoInformation photo={photo}/>
    <div className="atlas-picture-actions">{photo.mediaType==='video'&&<button type="button" aria-label="Play video" onClick={()=>{setPlaying(true);onToggle()}}><Play size={13}/></button>}{photo.mediaType!=='video'&&<button type="button" aria-label="Trace photograph" aria-pressed={tracing} onClick={()=>{setTracing(true);onToggle()}}><PenLine size={13}/></button>}{onEdit&&<button type="button" aria-label={'Edit '+label} onClick={onEdit}><Pencil size={12}/></button>}{onRemove&&<button type="button" aria-label={'Remove '+label} onClick={onRemove}><Trash2 size={12}/></button>}{!photo.source&&<button type="button" aria-label={'Download '+label} title="Download" onClick={()=>downloadMedia(photo.url,label)}><Download size={13}/></button>}{photo.source&&<a href={photo.source} target="_blank" rel="noreferrer">Source ↗</a>}</div>
   </section>}
-  {!tracing&&!playing&&onFavourite&&<FavouriteStar active={favourite} title={label} onToggle={onFavourite}/>}
+  {!tracing&&!playing&&onFavourite&&<FavouriteStar active={favourite} by={favouriteBy} title={label} onToggle={onFavourite}/>}
   </div>
  </article>;
 }

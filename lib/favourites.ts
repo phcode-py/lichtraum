@@ -3,36 +3,40 @@ import {useCallback,useEffect,useState} from 'react';
 
 const KEY='lichtraum-favourites';
 const readLocal=():string[]=>{try{const v=JSON.parse(localStorage.getItem(KEY)??'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string'):[]}catch{return[]}};
-const writeLocal=(ids:Set<string>)=>{try{localStorage.setItem(KEY,JSON.stringify([...ids]))}catch{}};
+const writeLocal=(ids:Iterable<string>)=>{try{localStorage.setItem(KEY,JSON.stringify([...ids]))}catch{}};
 
 /**
- * Your starred photographs. Saved to your account once the favourites table exists;
- * until then kept in this browser, and moved to the account on the first visit after setup.
+ * The shared favourites: every star is seen by everyone, with who set it.
+ * Until the favourites table is set up, stars stay in this browser; afterwards they are
+ * added to the shared favourites on the first visit.
  */
 export function useFavourites(enabled:boolean){
- const[ids,setIds]=useState<Set<string>>(()=>new Set()),[synced,setSynced]=useState(true);
+ const[stars,setStars]=useState<Map<string,string>>(()=>new Map()),[synced,setSynced]=useState(true);
  useEffect(()=>{
   if(!enabled)return;
   let cancelled=false;
-  fetch('/api/favourites').then(r=>r.ok?r.json():{available:false,ids:[]}).then(async(data:{available:boolean;ids:string[]})=>{
+  fetch('/api/favourites').then(r=>r.ok?r.json():{available:false,favourites:[]}).then(async(data:{available:boolean;favourites:{photoId:string;by:string}[]})=>{
    if(cancelled)return;
    const local=readLocal();
-   if(!data.available){setSynced(false);setIds(new Set(local));return;}
-   const missing=local.filter(id=>!data.ids.includes(id));
-   if(missing.length){const r=await fetch('/api/favourites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:missing,favourite:true})});if(r.ok)writeLocal(new Set())}
-   else if(local.length)writeLocal(new Set());
-   if(!cancelled){setSynced(true);setIds(new Set([...data.ids,...missing]))}
-  }).catch(()=>{if(!cancelled){setSynced(false);setIds(new Set(readLocal()))}});
+   if(!data.available){setSynced(false);setStars(new Map(local.map(id=>[id,''])));return;}
+   const shared=new Map(data.favourites.map(f=>[f.photoId,f.by])),missing=local.filter(id=>!shared.has(id));
+   if(missing.length){const r=await fetch('/api/favourites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:missing,favourite:true})});if(r.ok){const {by}=await r.json();missing.forEach(id=>shared.set(id,by??''));writeLocal([])}}
+   else if(local.length)writeLocal([]);
+   if(!cancelled){setSynced(true);setStars(shared)}
+  }).catch(()=>{if(!cancelled){setSynced(false);setStars(new Map(readLocal().map(id=>[id,''])))}});
   return()=>{cancelled=true};
  },[enabled]);
  const toggle=useCallback((id:string)=>{
-  setIds(current=>{
-   const next=new Set(current),favourite=!next.has(id);
-   if(favourite)next.add(id);else next.delete(id);
-   if(!synced)writeLocal(next);
-   else fetch('/api/favourites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[id],favourite})}).then(r=>{if(!r.ok){setSynced(false);writeLocal(next)}}).catch(()=>{setSynced(false);writeLocal(next)});
+  setStars(current=>{
+   const next=new Map(current),favourite=!next.has(id);
+   if(favourite)next.set(id,'');else next.delete(id);
+   if(!synced)writeLocal(next.keys());
+   else fetch('/api/favourites',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[id],favourite})}).then(async r=>{
+    if(!r.ok){setSynced(false);writeLocal(next.keys());return;}
+    const {by}=await r.json();if(favourite)setStars(s=>new Map(s).set(id,by??''));
+   }).catch(()=>{setSynced(false);writeLocal(next.keys())});
    return next;
   });
  },[synced]);
- return {ids,toggle,synced};
+ return {ids:new Set(stars.keys()),starredBy:(id:string)=>stars.get(id)||'',toggle,synced};
 }
