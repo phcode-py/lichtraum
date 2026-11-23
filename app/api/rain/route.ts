@@ -1,7 +1,7 @@
 import {createClient,getSessionUser} from '@/lib/supabase/server';
 import {RADAR_CORNERS,radarFrames} from '@/lib/meteoswiss';
 
-/** The last two hours of MeteoSwiss rain radar frames. */
+/** MeteoSwiss rain radar frames since the start of the current hour. */
 export async function GET(){
  const supabase=await createClient();
  if(!await getSessionUser(supabase))return Response.json({error:'Sign in required.'},{status:401});

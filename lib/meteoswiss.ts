@@ -34,11 +34,15 @@ export function radarTime(name:string){
  return Date.UTC(2000+Number(year),0,Number(dayOfYear),Number(hhmm.slice(0,2)),Number(hhmm.slice(2)));
 }
 
-/** The newest radar frames, oldest first. */
-export async function radarFrames(count=24){
+/** Radar frames from the start of the current hour until now, oldest first.
+ *  Just after the hour, before a new frame exists, the latest frame is shown on its own. */
+export async function radarFrames(){
  const now=Date.now();
  const [today,yesterday]=await Promise.all([itemAssets(RADAR,day(now)),itemAssets(RADAR,day(now-86400000))]);
- return [...yesterday,...today].filter(name=>RADAR_FRAME.test(name)).sort((a,b)=>radarTime(a)!-radarTime(b)!).slice(-count).map(name=>({name,time:radarTime(name)!}));
+ const all=[...yesterday,...today].filter(name=>RADAR_FRAME.test(name)).sort((a,b)=>radarTime(a)!-radarTime(b)!).map(name=>({name,time:radarTime(name)!}));
+ // Zürich is a whole number of hours from UTC, so the hour starts at the same instant in both.
+ const hour=Math.floor(now/3600000)*3600000,thisHour=all.filter(f=>f.time>=hour);
+ return thisHour.length?thisHour:all.slice(-1);
 }
 
 /** Rain rate in mm/h → colour. Light rain is a pale wash, heavy rain the project blue. */
