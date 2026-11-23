@@ -1023,8 +1023,8 @@ main:has(.workspace.account-paper-workspace.section-open)>.topbar-actions{displa
 .workspace .walk-stop-entry .photo-edit .field :is(input,select,textarea){border:0;background:transparent;box-shadow:none;padding-left:0;padding-right:0}
 .workspace .walk-stop-entry .photo-edit .field input:not([type=checkbox]){font-family:'Courier New',Courier,monospace}
 
-.workspace .photo-edit .photo-edit-actions>button{font-family:var(--font-interface);font-size:12px;font-weight:400;line-height:1.5;letter-spacing:0;color:var(--blue);min-height:36px;padding:0;background:none;border:0}
-.workspace .photo-edit .photo-edit-actions>button>svg{width:14px;height:14px}
+.workspace .photo-edit .photo-edit-actions>button,.workspace .upload-panel .save-button{font-family:var(--font-interface);font-size:12px;font-weight:400;line-height:1.5;letter-spacing:0;color:var(--blue);min-height:36px;padding:0;background:none;border:0}
+.workspace .photo-edit .photo-edit-actions>button>svg,.workspace .upload-panel .save-button>svg{width:14px;height:14px}
 
 /* Lift the tape before resizing the atlas, then press it onto its wider sheet. */
 .gallery-workspace>.walk-panel-tapes{left:70px;right:70px;width:auto;max-width:none;top:100px}
@@ -1415,3 +1415,6 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .rain-span{display:flex;margin:-4px 0 10px;font:400 8px/1.6 'Courier New',Courier,monospace;color:#8b8b81}
 .rain-span>span:first-child{flex:none;border-right:1px solid #c9c9bd;padding-right:6px;text-align:right;min-width:max-content}
 .rain-span>span:last-child{padding-left:6px;color:var(--blue)}
+
+/* New pictures use the same quiet save action as the image editor. */
+.workspace .upload-panel .save-button{display:flex;justify-content:flex-end;width:auto;margin:20px 0 0 auto;gap:8px}
