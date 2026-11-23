@@ -1405,3 +1405,5 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 /* Download and edit sit on the same line as the close button. */
 .gallery-lightbox-notes .gallery-lightbox-actions{position:absolute;top:20px;right:64px;z-index:5;margin:0}
 .gallery-lightbox-notes .gallery-lightbox-heading{padding-right:150px}
+.photo-tag-line .tag-lines{display:flex;flex-direction:column;gap:3px}
+.gallery-show-more{border-top:0!important;gap:8px;padding:18px 0;margin-top:20px;font-size:13px}
