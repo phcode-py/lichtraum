@@ -1,4 +1,5 @@
 'use client';
+import AutoVideo from './auto-video';
 import {createContext,useCallback,useContext,useEffect,useLayoutEffect,useImperativeHandle,useRef,useState,type Ref} from 'react';
 import {Camera,Video,Plus,Trash2,X} from 'lucide-react';
 import PaperTextEditor,{PaperText} from './paper-text-editor';
@@ -14,7 +15,7 @@ export type EntriesHandle={save:()=>Promise<void>};
 type EntryDraft={content:string;file?:File|null;removeMedia?:boolean;removeEntry?:boolean};
 
 function Reference({url,video,caption}:{url:string;video:boolean;caption:string}){
- return video?<video className="paper-reference-video" src={url} controls playsInline preload="metadata" aria-label={caption}/>:<ImageViewButton className="paper-reference" url={url} title={caption}><img src={url} alt={caption} loading="lazy"/></ImageViewButton>;
+ return video?<AutoVideo className="paper-reference-video" src={url} controls playsInline preload="metadata" aria-label={caption}/>:<ImageViewButton className="paper-reference" url={url} title={caption}><img src={url} alt={caption} loading="lazy"/></ImageViewButton>;
 }
 function PaperEntry({message,index,editing,disabled,chat,draft,onChange}:{message:Message;index:number;editing:boolean;disabled:boolean;chat:boolean;draft?:EntryDraft;onChange:(patch:Partial<EntryDraft>)=>void}){
  const[preview,setPreview]=useState('');

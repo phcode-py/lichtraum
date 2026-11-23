@@ -7,6 +7,7 @@ import MapPrintButton from './map-print-button';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type {WalkRouteDraft} from '@/lib/walk-route';
 import WalkMapTracing from './walk-map-tracing';
+import {videoThumbnailSrc} from '@/lib/media';
 import {observeMapLocation} from '@/lib/map-location';
 import {daySunPath,solarPosition,zurichDate,ZURICH} from '@/lib/sun';
 type Photo={mediaType?:'photo'|'video';id:string;title:string;place:string;lat:number;lng:number;url:string;caption:string;createdAt:number;source?:string};
@@ -24,7 +25,7 @@ export const mapStyle:StyleSpecification={version:8,sources:{city:{type:'vector'
 const SUN_GLYPH='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="currentColor"/><g stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 1.8v2.6M12 19.6v2.6M1.8 12h2.6M19.6 12h2.6M4.8 4.8l1.85 1.85M17.35 17.35l1.85 1.85M4.8 19.2l1.85-1.85M17.35 6.65l1.85-1.85"/></g></svg>';
 export type MapRoute={id:string;lines:[number,number][][];active:boolean;title?:string};
 export default function PhotoMap({tracingWalkId=null,tracingVisible=false,onTracingHide,routeDraft=null,onRoutePoint,onRouteMove,onRouteRemove,photos,selected,onSelect,picking,point,onPoint,reset,routes=[],sunTime=null,sunOpen=false,onSunToggle,onCurrentLocation,sunPoint=ZURICH,onSunPoint,sunPicking=false,onRouteSelect,rainOpen=false,onRainToggle,rainRadar=null,rainFrame=0}:{onRouteSelect?:(id:string)=>void;rainOpen?:boolean;onRainToggle?:()=>void;rainRadar?:RainRadar|null;rainFrame?:number;tracingWalkId?:string|null;tracingVisible?:boolean;onTracingHide?:()=>void;routeDraft?:WalkRouteDraft|null;onRoutePoint?:(p:{lat:number;lng:number})=>void;onRouteMove?:(index:number,p:{lat:number;lng:number})=>void;onRouteRemove?:(index:number)=>void;sunPoint?:{lat:number;lng:number};onSunPoint?:(p:{lat:number;lng:number})=>void;sunPicking?:boolean;sunTime?:number|null;sunOpen?:boolean;onSunToggle:()=>void;onCurrentLocation?:(p:{lat:number;lng:number})=>void;photos:Photo[];selected:string|null;onSelect:(p:Photo)=>void;picking:boolean;point:{lat:number;lng:number}|null;onPoint:(p:{lat:number;lng:number})=>void;reset:number;routes?:MapRoute[]}){
- const element=useRef<HTMLDivElement>(null),map=useRef<Map|null>(null),lib=useRef<typeof import('maplibre-gl')|null>(null),markers=useRef<Marker[]>([]),labels=useRef<Marker[]>([]),pick=useRef(picking),choose=useRef(onPoint),select=useRef(onSelect);const[ready,setReady]=useState(0),[mapError,setMapError]=useState(false),[bearing,setBearing]=useState(0);
+ const element=useRef<HTMLDivElement>(null),map=useRef<Map|null>(null),lib=useRef<typeof import('maplibre-gl')|null>(null),markers=useRef<globalThis.Map<string,{marker:Marker;photo:Photo}>>(new globalThis.Map()),chosenMarker=useRef<Marker|null>(null),labels=useRef<Marker[]>([]),pick=useRef(picking),choose=useRef(onPoint),select=useRef(onSelect);const[ready,setReady]=useState(0),[mapError,setMapError]=useState(false),[bearing,setBearing]=useState(0);
  const getMap=useCallback(()=>map.current,[]);
  const routeFocus=useRef<number|null>(null);
  const drawing=useRef(routeDraft),routeChoose=useRef(onRoutePoint);
@@ -54,9 +55,39 @@ export default function PhotoMap({tracingWalkId=null,tracingVisible=false,onTrac
  }
  const sunPick=useRef(sunPicking),sunChoose=useRef(onSunPoint),restoreOriginFocus=useRef(false);
  useEffect(()=>{sunPick.current=sunPicking;sunChoose.current=onSunPoint;pick.current=picking;choose.current=onPoint;select.current=onSelect;},[sunPicking,onSunPoint,picking,onPoint,onSelect]);
- useEffect(()=>{let cancelled=false;let observer:ResizeObserver|undefined;import('maplibre-gl').then(M=>{if(cancelled||!element.current)return;lib.current=M;const m=new M.Map({container:element.current,style:mapStyle,center:[8.5399,47.3709],zoom:14.7,minZoom:2,maxZoom:18,pitchWithRotate:false,rollEnabled:false,minPitch:0,maxPitch:0,dragRotate:true,touchZoomRotate:true,touchPitch:false,attributionControl:{compact:true},canvasContextAttributes:{antialias:false}});map.current=m;const districts=[['CITY',47.3730,8.5347],['ALTSTADT',47.3717,8.5439],['ENGE',47.3618,8.5284],['SEEFELD',47.3606,8.5515],['HOCHSCHULEN',47.376,8.55],['LANGSTRASSE',47.3788,8.5260]] as const;districts.forEach(([name,lat,lng])=>{const label=document.createElement('span');label.className='district-label';label.textContent=name;labels.current.push(new M.Marker({element:label}).setLngLat([lng,lat]).addTo(m));});m.on('rotate',()=>setBearing(m.getBearing()));m.on('load',()=>{if(!cancelled){setReady(n=>n+1);setMapError(false);}});m.on('error',()=>setMapError(true));m.on('idle',()=>{if(m.areTilesLoaded())setMapError(false)});m.on('click',e=>{if(drawing.current?.picking)routeChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(pick.current)choose.current({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(sunPick.current)sunChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng})});observer=new ResizeObserver(()=>{m.resize();});observer.observe(element.current);}).catch(()=>setMapError(true));return()=>{cancelled=true;observer?.disconnect();markers.current.forEach(m=>m.remove());labels.current.forEach(m=>m.remove());labels.current=[];map.current?.remove();map.current=null;};},[]);
- useEffect(()=>{if(!ready||!lib.current||!map.current)return;markers.current.forEach(m=>m.remove());markers.current=[];const M=lib.current;photos.forEach(p=>{const node=document.createElement('button');node.className='photo-marker '+(p.id===selected?'active':'');node.setAttribute('aria-label',p.title+' at '+p.place);node.dataset.cursor='view';if(p.mediaType==='video'){const icon=document.createElement('span');icon.className='video-map-icon';icon.textContent='▶';icon.setAttribute('aria-hidden','true');node.appendChild(icon);}else{const img=document.createElement('img');img.src=p.url;img.alt='';node.appendChild(img);}node.addEventListener('click',e=>{e.stopPropagation();select.current(p)});const marker=new M.Marker({element:node,anchor:'bottom',offset:[0,-10]}).setLngLat([p.lng,p.lat]).addTo(map.current!);markers.current.push(marker);});if(point){const node=document.createElement('span');node.className='chosen-point';node.setAttribute('aria-label','Selected photo location');markers.current.push(new M.Marker({element:node}).setLngLat([point.lng,point.lat]).addTo(map.current));}},[ready,photos,selected,point]);
- useEffect(()=>{const p=photos.find(p=>p.id===selected);if(p)map.current?.flyTo({center:[p.lng,p.lat],zoom:16,duration:700,essential:false})},[selected,photos]);
+ useEffect(()=>{let cancelled=false;let observer:ResizeObserver|undefined;import('maplibre-gl').then(M=>{if(cancelled||!element.current)return;lib.current=M;const m=new M.Map({container:element.current,style:mapStyle,center:[8.5399,47.3709],zoom:14.7,minZoom:2,maxZoom:18,pitchWithRotate:false,rollEnabled:false,minPitch:0,maxPitch:0,dragRotate:true,touchZoomRotate:true,touchPitch:false,attributionControl:{compact:true},canvasContextAttributes:{antialias:false}});map.current=m;const districts=[['CITY',47.3730,8.5347],['ALTSTADT',47.3717,8.5439],['ENGE',47.3618,8.5284],['SEEFELD',47.3606,8.5515],['HOCHSCHULEN',47.376,8.55],['LANGSTRASSE',47.3788,8.5260]] as const;districts.forEach(([name,lat,lng])=>{const label=document.createElement('span');label.className='district-label';label.textContent=name;labels.current.push(new M.Marker({element:label}).setLngLat([lng,lat]).addTo(m));});m.on('rotate',()=>setBearing(m.getBearing()));m.on('load',()=>{if(!cancelled){setReady(n=>n+1);setMapError(false);}});m.on('error',()=>setMapError(true));m.on('idle',()=>{if(m.areTilesLoaded())setMapError(false)});m.on('click',e=>{if(drawing.current?.picking)routeChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(pick.current)choose.current({lat:e.lngLat.lat,lng:e.lngLat.lng});else if(sunPick.current)sunChoose.current?.({lat:e.lngLat.lat,lng:e.lngLat.lng})});observer=new ResizeObserver(()=>{m.resize();});observer.observe(element.current);}).catch(()=>setMapError(true));return()=>{cancelled=true;observer?.disconnect();markers.current.forEach(entry=>entry.marker.remove());markers.current.clear();chosenMarker.current?.remove();chosenMarker.current=null;labels.current.forEach(m=>m.remove());labels.current=[];map.current?.remove();map.current=null;};},[]);
+ // Keep existing pins attached: opening a panel or selecting a photo must not reload every thumbnail.
+ useEffect(()=>{
+  const m=map.current,M=lib.current;if(!ready||!M||!m)return;
+  const ids=new Set(photos.map(p=>p.id));
+  for(const [id,entry] of markers.current){if(!ids.has(id)){entry.marker.remove();markers.current.delete(id)}}
+  for(const p of photos){
+   let entry=markers.current.get(p.id);
+   if(!entry){
+    const node=document.createElement('button');node.className='photo-marker';node.dataset.cursor='view';
+    const marker=new M.Marker({element:node,anchor:'bottom',offset:[0,-10]}).setLngLat([p.lng,p.lat]).addTo(m);
+    entry={marker,photo:p};markers.current.set(p.id,entry);
+    node.addEventListener('click',e=>{e.stopPropagation();const latest=markers.current.get(p.id);if(latest)select.current(latest.photo)});
+   }
+   const node=entry.marker.getElement(),previous=entry.photo;
+   if(!node.firstChild||previous.url!==p.url||previous.mediaType!==p.mediaType){
+    if(p.mediaType==='video'){const frame=document.createElement('video');frame.src=videoThumbnailSrc(p.url);frame.muted=true;frame.playsInline=true;frame.preload='metadata';frame.setAttribute('aria-hidden','true');node.replaceChildren(frame)}
+    else{const img=document.createElement('img');img.src=p.url;img.alt='';img.decoding='async';node.replaceChildren(img)}
+   }
+   node.setAttribute('aria-label',p.title+' at '+p.place);
+   node.classList.toggle('active',p.id===selected);
+   if(previous.lng!==p.lng||previous.lat!==p.lat)entry.marker.setLngLat([p.lng,p.lat]);
+   entry.photo=p;
+  }
+ },[ready,photos,selected]);
+ useEffect(()=>{
+  const m=map.current,M=lib.current;if(!ready||!M||!m)return;
+  if(!point){chosenMarker.current?.remove();chosenMarker.current=null;return;}
+  if(!chosenMarker.current){const node=document.createElement('span');node.className='chosen-point';node.setAttribute('aria-label','Selected photo location');chosenMarker.current=new M.Marker({element:node}).setLngLat([point.lng,point.lat]).addTo(m)}
+  else chosenMarker.current.setLngLat([point.lng,point.lat]);
+ },[ready,point]);
+ const selectedPhoto=photos.find(p=>p.id===selected),selectedLat=selectedPhoto?.lat,selectedLng=selectedPhoto?.lng;
+ useEffect(()=>{if(selectedLat!==undefined&&selectedLng!==undefined)map.current?.flyTo({center:[selectedLng,selectedLat],zoom:16,duration:700,essential:false})},[ready,selected,selectedLat,selectedLng]);
  // Walk routes: the active walk in royal blue, others in light blue.
  const activeRoute=routes.find(r=>r.active)?.id??'';
  useEffect(()=>{const m=map.current;if(!ready||!m)return;

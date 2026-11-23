@@ -14,7 +14,7 @@ export function mediaError(file: {type:string;size:number}): string {
   return 'Choose a JPG, PNG, WebP photo or an MP4, WebM, MOV video.';
 }
 
-/** Gallery tiles show a muted, paused video. The "#t=" fragment makes Safari paint the first frame
+/** Map pins show a paused video frame. The "#t=" fragment makes Safari paint the first frame
  * instead of a blank box. Playable players and local blob previews keep their URL unchanged. */
 export function videoThumbnailSrc(url:string, controls=false) {
   if (controls || !/^https?:/.test(url) || url.includes('#')) return url;

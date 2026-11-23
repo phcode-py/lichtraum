@@ -1,4 +1,5 @@
 'use client';
+import AutoVideo from './auto-video';
 import {ImageViewButton} from './image-viewer';
 import AtlasMedia from './atlas-media';
 import PaperResize,{paperSize,type PaperSize} from './paper-resize';
@@ -213,7 +214,7 @@ export default function Correspondence({localPreview=false,photos=[],photosLoadi
    {activeFilters>0&&!draft&&!loading&&!paperMatchesFilters({title:settings.room?.title??'Messages',category:'messages',material:settings.room?.material},paperTags.room,filters)&&!papers.some(p=>paperMatchesFilters(p,paperTags[p.id],filters))&&<div className="paper-filter-empty"><p>No sheets match these filters.</p><button type="button" onClick={()=>filterPapers(emptyPaperFilters())}>show all papers</button></div>}
    {draft&&receipt(draft.id,'New paper',String(papers.length+3).padStart(3,'0'),<div className="paper-notes paper-draft-body" ref={draftBody}>
     <PaperTextEditor value={draftText} onChange={setDraftText} label="New paper text" disabled={saving}/>
-    {draftPreview&&<div className="paper-reference-draft">{draftFile?.type.startsWith('video/')?<video src={draftPreview} controls playsInline aria-label="Selected reference video"/>:<ImageViewButton url={draftPreview} title="Selected reference image"><img src={draftPreview} alt="Selected reference image"/></ImageViewButton>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={saving} onClick={()=>{setDraftFile(null);draftUpload.current=null}}><X size={13}/></button></div>}
+    {draftPreview&&<div className="paper-reference-draft">{draftFile?.type.startsWith('video/')?<AutoVideo src={draftPreview} controls playsInline aria-label="Selected reference video"/>:<ImageViewButton url={draftPreview} title="Selected reference image"><img src={draftPreview} alt="Selected reference image"/></ImageViewButton>}<button type="button" className="paper-reference-remove" aria-label="Remove selected reference" disabled={saving} onClick={()=>{setDraftFile(null);draftUpload.current=null}}><X size={13}/></button></div>}
     <div className="paper-add-actions"><button type="button" className="paper-write" title="Write a note" aria-label="Write a note" disabled={saving} onClick={()=>draftBody.current?.querySelector<HTMLElement>('[contenteditable]')?.focus()}><Plus size={14} aria-hidden="true"/></button><label className="paper-reference-add" title="Add reference image"><Camera size={14} aria-hidden="true"/><input type="file" accept={REFERENCE_IMAGE_ACCEPT} aria-label="Choose reference image" disabled={saving} onChange={e=>{chooseDraftFile(e.target.files?.[0]);e.currentTarget.value=''}}/></label><label className="paper-reference-add" title="Add a video"><Video size={14} aria-hidden="true"/><input type="file" accept={REFERENCE_VIDEO_ACCEPT} aria-label="Choose reference video" disabled={saving} onChange={e=>{chooseDraftFile(e.target.files?.[0]);e.currentTarget.value=''}}/></label></div>
    </div>,material)}
   </div></div>

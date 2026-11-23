@@ -2,11 +2,13 @@ import type {GalleryPhoto} from '@/lib/gallery';
 import {AREAS,IMAGE_TYPES,TIMES,WEATHER} from '@/lib/gallery';
 import {SUN_ZONE,sunDirection} from '@/lib/sun';
 
+const captureTimeFormat=new Intl.DateTimeFormat('en-GB',{timeZone:SUN_ZONE,day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
 /** Identical saved information in the atlas, walk photographs and gallery. */
 export default function PhotoInformation({photo,walkTitle}:{photo:GalleryPhoto;walkTitle?:string}){
  const conditions=photo.conditions,weather=conditions?.weather;
  const date=conditions?.capturedAt??photo.createdAt;
- const time=new Intl.DateTimeFormat('en-GB',{timeZone:SUN_ZONE,day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(date);
+ const time=captureTimeFormat.format(date);
  const tags=photo.tags;
  const labels=tags?[...IMAGE_TYPES.filter(t=>tags.imageTypes.includes(t.id)),...TIMES.filter(t=>t.id===tags.timeOfDay),...WEATHER.filter(t=>tags.weather.includes(t.id)),...AREAS.filter(t=>t.id===tags.area)].map(t=>t.label):[];
  return (
