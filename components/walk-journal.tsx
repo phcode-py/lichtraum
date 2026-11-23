@@ -1,5 +1,7 @@
 'use client';
 import WalkPeople from './walk-people';
+import MapPrintButton from './map-print-button';
+import {segments} from '@/lib/walks';
 import {ArrowLeft,ArrowUpRight,Play,Plus,Layers,Eye} from 'lucide-react';
 import {type ReactNode,useState} from 'react';
 import type {WalkRouteDraft} from '@/lib/walk-route';
@@ -16,7 +18,14 @@ const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',mont
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
-export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{tracingVisible:boolean;onTracingToggle:()=>void;filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
+/** The area of a walk's route, for printing just that walk. */
+function routeBounds(walk:{path:import('@/lib/walks').WalkPoint[]}):[[number,number],[number,number]]|undefined{
+ const points=segments(walk.path).flat();if(!points.length)return undefined;
+ const lng=points.map(p=>p[0]),lat=points.map(p=>p[1]);
+ return [[Math.min(...lng),Math.min(...lat)],[Math.max(...lng),Math.max(...lat)]];
+}
+
+export default function WalkJournal({getMap,tracingVisible,onTracingToggle,filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{getMap?:()=>import('maplibre-gl').Map|null;tracingVisible:boolean;onTracingToggle:()=>void;filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
  const [editingMoment,setEditingMoment]=useState<string|null>(null),[revealedMoment,setRevealedMoment]=useState<string|null>(null);
  const [addingPast,setAddingPast]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
@@ -28,7 +37,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
   return <div className="walk-journal walk-detail">
    <button className="walk-back" aria-label="Back to all walks" title="Back to all walks" onClick={()=>{setEditing(null);onSelect(null)}}><ArrowLeft size={17}/></button>
    {editing===walk.id?<WalkEditor routeDraft={routeDraft} onRouteChange={onRouteChange} key={walk.id} walk={walk} number={String(n).padStart(3,'0')} onSaved={onSaved} onRemoved={onRemoved} onClose={()=>setEditing(null)}/>:<>
-   <div className="walk-title-row"><h2><span className="walk-detail-number">{String(n).padStart(3,'0')}</span><span>{walk.title||'Untitled walk'}</span></h2><WalkActions walk={walk} onEdit={()=>setEditing(walk.id)}/></div>
+   <div className="walk-title-row"><h2><span className="walk-detail-number">{String(n).padStart(3,'0')}</span><span>{walk.title||'Untitled walk'}</span></h2><div className="walk-title-tools"><WalkActions walk={walk} onEdit={()=>setEditing(walk.id)}/>{getMap&&<MapPrintButton getMap={getMap} bounds={routeBounds(walk)} what="this walk"/>}</div></div>
    <div className="walk-detail-dates"><time dateTime={new Date(walk.startedAt).toISOString()}>{day(walk.startedAt)}</time><span className="walk-detail-time"> {time(walk.startedAt)}{walk.endedAt?`-${day(walk.startedAt)===day(walk.endedAt)?'':day(walk.endedAt)+' · '}${time(walk.endedAt)}`:''}</span></div>
    <WalkPeople key={walk.id} walk={walk} onSaved={onSaved}/>
    {walk.description&&<p className="walk-description">{walk.description}</p>}
@@ -47,7 +56,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
  }
 
  return <div className="walk-journal">
-  <h1 className="section-display">Reflective walks</h1>
+  <div className="walk-heading-row"><h1 className="section-display">Reflective walks</h1>{getMap&&<MapPrintButton getMap={getMap} what="the map"/>}</div>
   <div className="walk-entry-options"><button className="primary walk-start-inline" onClick={onStart}><span className="walk-ring" aria-hidden="true"/>Start walk</button><button className="walk-past-button" onClick={()=>setAddingPast(true)}><span className="walk-ring walk-ring-filled" aria-hidden="true"/>Add a past walk</button></div>
   {momentForm}
   {addingPast&&<WalkEditor routeDraft={routeDraft} onRouteChange={onRouteChange} onClose={()=>setAddingPast(false)} onSaved={onCreated}/>}
