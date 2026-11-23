@@ -126,3 +126,72 @@ export async function zurichForecast():Promise<Forecast>{
  cached={at:Date.now(),forecast};
  return forecast;
 }
+
+// ---------------------------------------------------------------------------
+// Rain forecast maps for the next 24 hours, drawn from the MeteoSwiss local forecast:
+// hourly rain (rre150h0) at about 5800 places across Switzerland, spread smoothly between them.
+// Drawn on the radar's own grid (every 2 km instead of 1 km), so it lines up with RADAR_CORNERS.
+
+const FORECAST_GRID={w:355,h:320,km:2};
+const NEAR=8,REACH=7;// cells: search neighbourhood and the distance a place still colours
+
+type ForecastPoint={x:number;y:number};
+let pointCache:Promise<Map<string,ForecastPoint>>|null=null;
+/** Every forecast place, as a position on the forecast grid. */
+function forecastPoints(){
+ pointCache??=(async()=>{
+  const r=await fetch(`https://data.geo.admin.ch/${LOCAL}/ogd-local-forecasting_meta_point.csv`,{signal:AbortSignal.timeout(15000),cache:'no-store'});
+  if(!r.ok)throw Error('Forecast places unavailable');
+  const lines=new TextDecoder('latin1').decode(await r.arrayBuffer()).split('\n'),head=lines[0].split(';');
+  const id=head.indexOf('point_id'),east=head.indexOf('point_coordinates_lv95_east'),north=head.indexOf('point_coordinates_lv95_north');
+  const points=new Map<string,ForecastPoint>();
+  for(const line of lines.slice(1)){const c=line.split(';');const e=Number(c[east]),n=Number(c[north]);if(!c[id]||!Number.isFinite(e)||!Number.isFinite(n))continue;
+   // LV95 metres → the radar grid: columns from 255.5 km east, rows from 479.5 km north downwards.
+   points.set(c[id],{x:((e/1000-2000)-255.5)/FORECAST_GRID.km,y:(479.5-(n/1000-1000))/FORECAST_GRID.km});}
+  return points;
+ })().catch(e=>{pointCache=null;throw e});
+ return pointCache;
+}
+
+/** One hour of forecast rain as a transparent PNG on the radar grid. */
+function forecastPng(points:ForecastPoint[],values:Float32Array){
+ const {w,h}=FORECAST_GRID,rgba=new Uint8Array(w*h*4),cell=NEAR,cols=Math.ceil(w/cell)+1,rows=Math.ceil(h/cell)+1;
+ const buckets:number[][]=Array.from({length:cols*rows},()=>[]);
+ points.forEach((p,i)=>{if(Number.isFinite(values[i])&&p.x>=-cell&&p.y>=-cell&&p.x<w+cell&&p.y<h+cell)buckets[Math.max(0,Math.floor(p.y/cell))*cols+Math.max(0,Math.floor(p.x/cell))]?.push(i)});
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+  let sum=0,weight=0,nearest=Infinity;const bx=Math.floor(x/cell),by=Math.floor(y/cell);
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const list=buckets[(by+dy)*cols+bx+dx];if(!list||by+dy<0||bx+dx<0||bx+dx>=cols)continue;
+   for(const i of list){const p=points[i],d2=(p.x-x)**2+(p.y-y)**2;if(d2>REACH*REACH)continue;nearest=Math.min(nearest,d2);const k=1/(d2+.5);sum+=values[i]*k;weight+=k}}
+  if(!weight)continue;
+  // Fade out towards the edge of the forecast area instead of a hard border.
+  const edge=Math.max(0,Math.min(1,(REACH-Math.sqrt(nearest))/2.5)),[r,g,b,a]=rainColour(sum/weight);
+  rgba.set([r,g,b,Math.round(a*edge)],(y*w+x)*4);
+ }
+ return png(w,h,rgba);
+}
+
+let rainCache:{run:string;at:number;frames:{time:number;url:string}[]}|null=null;
+
+/** Hourly rain forecast maps for the next 24 hours, refreshed with each new forecast run. */
+export async function rainForecastFrames(hours=24){
+ const now=Date.now();
+ if(rainCache&&now-rainCache.at<20*60000)return rainCache.frames.filter(f=>f.time>now-3600000).slice(0,hours);
+ let assets=await itemAssets(LOCAL,day(now));
+ if(!assets.length)assets=await itemAssets(LOCAL,day(now-86400000));
+ const run=assets.map(n=>RUN.exec(n)).filter((m):m is RegExpExecArray=>!!m&&m[2]==='rre150h0').map(m=>m[1]).sort().at(-1);
+ if(!run)throw Error('Forecast unavailable');
+ if(rainCache?.run===run){rainCache.at=now;return rainCache.frames.filter(f=>f.time>now-3600000).slice(0,hours)}
+ const places=await forecastPoints(),ids=[...places.keys()],index=new Map(ids.map((id,i)=>[id,i])),list=ids.map(id=>places.get(id)!);
+ const from=Math.floor(now/3600000)*3600000+3600000,until=from+(hours+2)*3600000,byHour=new Map<number,Float32Array>();
+ const response=await fetch(`https://data.geo.admin.ch/${LOCAL}/${run.slice(0,8)}-ch/vnut12.lssw.${run}.rre150h0.csv`,{signal:AbortSignal.timeout(30000),cache:'no-store'});
+ if(!response.ok||!response.body)throw Error('Forecast unavailable');
+ const decoder=new TextDecoder();let rest='';
+ const take=(line:string)=>{const[id,,date,value]=line.split(';');if(!date||date.length<12)return;const t=parseTime(date);if(t<from||t>until)return;const i=index.get(id);if(i===undefined)return;
+  let row=byHour.get(t);if(!row){row=new Float32Array(list.length).fill(NaN);byHour.set(t,row)}row[i]=Number(value)};
+ for await(const part of response.body as unknown as AsyncIterable<Uint8Array>){const text=rest+decoder.decode(part,{stream:true});const lines=text.split('\n');rest=lines.pop()??'';lines.forEach(take)}
+ take(rest);
+ // Each value is the rain in the hour before its time: show it at the start of that hour.
+ const frames=[...byHour.keys()].sort((a,b)=>a-b).map(t=>({time:t-3600000,url:`data:image/png;base64,${forecastPng(list,byHour.get(t)!).toString('base64')}`}));
+ rainCache={run,at:now,frames};
+ return frames.filter(f=>f.time>now-3600000).slice(0,hours);
+}
