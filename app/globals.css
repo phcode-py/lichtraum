@@ -1436,3 +1436,9 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 
 /* A still video frame belongs on the map just like a photograph. */
 .photo-marker video{width:100%;height:100%;display:block;object-fit:cover;pointer-events:none}
+/* Details: sun direction and height read like the weather values, small and quiet. */
+.gallery-lightbox-notes .sun-angles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;margin:14px 0 6px}
+.gallery-lightbox-notes .sun-angles strong{display:block;order:2;font:400 12px/1.4 var(--font-interface);color:#3e3e36;letter-spacing:0}
+.gallery-lightbox-notes .sun-angles strong span{font-size:12px}
+.gallery-lightbox-notes .sun-angles>div{display:flex;flex-direction:column}
+.gallery-lightbox-notes .sun-angles>div>span{order:1;font:400 8px/1.6 'Courier New',Courier,monospace;color:#a2a296;margin:0 0 2px}
