@@ -41,7 +41,7 @@ export default function WalkJournal({onOpenPicture,tracingVisible,onTracingToggl
    {momentForm}
    <section className="walk-stops">
     {!pins.length&&<p className="walk-empty-note">No impressions on this walk.</p>}
-    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&canEditPhoto(p)?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={canEditPhoto(p)?()=>setEditingMoment(p.id):undefined} onOpen={onOpenPicture?()=>onOpenPicture(p.id):undefined}/>}</div>)}
+    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&canEditPhoto(p)?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard walkTitle={walk.title} photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={canEditPhoto(p)?()=>setEditingMoment(p.id):undefined} onOpen={onOpenPicture?()=>onOpenPicture(p.id):undefined}/>}</div>)}
    </section>
   </div>;
  }

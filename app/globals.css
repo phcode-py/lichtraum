@@ -1429,3 +1429,7 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .atlas-preview-grid .video-label{font-size:9px}
 .atlas-preview-grid>button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .atlas-preview-empty{margin:8px 0;color:#8b9082;font:11px/1.7 'Courier New',Courier,monospace}
+
+.photo-capture-edit{scroll-margin-top:32px}
+.capture-time-confirm{display:flex;align-items:flex-start;gap:9px;margin:12px 0 20px;color:#858a7e;font-size:11px;line-height:1.6;cursor:pointer}
+.capture-time-confirm input{flex-shrink:0;accent-color:var(--blue);margin:3px 0 0}

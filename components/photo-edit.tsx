@@ -7,6 +7,7 @@ import {districts,nearestPlace,places,squares} from '@/lib/places';
 import {emptyTags,type PhotoTags} from '@/lib/gallery';
 import type {PhotoConditions} from '@/lib/photo-conditions';
 import {parseZurichDateTime,zurichDateTime} from '@/lib/sun';
+import {captureEditTime} from '@/lib/photo-capture-edit';
 import AtlasMedia from './atlas-media';
 import PhotoTracing,{type PhotoTracingHandle} from './photo-tracing';
 import CaptureConditions from './capture-conditions';
@@ -22,13 +23,16 @@ export type EditPin={point:Point|null;picking:boolean;onStart:()=>void;onStop:()
 const sameTags=(a:PhotoTags,b:PhotoTags)=>JSON.stringify(a)===JSON.stringify(b);
 
 /** Edit your own photograph or impression with everything chosen at upload. */
-export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,onDeleted,walks,pin,people=[]}:{photo:T;onSaved:(p:T,notice?:string)=>void;onCancel:()=>void;onDeleted?:(id:string)=>void;walks?:EditWalk[];pin?:EditPin;people?:string[]}){
+export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,onDeleted,walks,pin,people=[],startAtCapture=false}:{startAtCapture?:boolean;photo:T;onSaved:(p:T,notice?:string)=>void;onCancel:()=>void;onDeleted?:(id:string)=>void;walks?:EditWalk[];pin?:EditPin;people?:string[]}){
+ const captureSection=useRef<HTMLDivElement>(null);
+ const[captureConfirmed,setCaptureConfirmed]=useState(false);
+ useEffect(()=>{if(startAtCapture){captureSection.current?.querySelector<HTMLButtonElement>('button')?.focus({preventScroll:true});captureSection.current?.scrollIntoView({block:'start'})}},[startAtCapture]);
  const tracing=useRef<PhotoTracingHandle>(null);
  const[file,setFile]=useState<File|null>(null),[preview,setPreview]=useState('');
  const[title,setTitle]=useState(photo.title),[caption,setCaption]=useState(photo.caption),[shared,setShared]=useState(!!photo.shared);
  const located=typeof photo.lat==='number'&&typeof photo.lng==='number';
  const[place,setPlace]=useState(photo.place??''),[point,setPoint]=useState<Point|null>(located?{lat:photo.lat!,lng:photo.lng!}:null);
- // The date the picture already shows: when it was taken, or else when it was added. It is only saved if changed.
+ // An older upload's date is only a suggestion until the person explicitly confirms it.
  const initialTime=photo.conditions?zurichDateTime(photo.conditions.capturedAt):photo.createdAt?zurichDateTime(photo.createdAt):'';
  const[time,setTime]=useState(initialTime);
  const[author,setAuthor]=useState(photo.author??'');
@@ -63,10 +67,11 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
   try{
    if(!file&&tracing.current?.hasPending()&&!await tracing.current.savePending()){setBusy(false);return;}
    if(file){const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Your session ended. Sign in again.');key=await uploadMedia(supabase,photo.ownerId??user.id,file,setPrep);setPrep(null);}
-   const timeChanged=capturedAt!==null&&(time!==initialTime||(moved&&!!photo.conditions));
-   const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(author.trim()&&author.trim()!==(photo.author??'')?{author:author.trim()}:{}),...(timeChanged?{capturedAt}:{})};
+   const timeToSave=captureEditTime({time,initialTime,savedCaptureAt:photo.conditions?.capturedAt,confirmed:captureConfirmed,moved});
+   const body={title,caption,shared,...(key?{key}:{}),...(place.trim()&&place!==photo.place?{place}:{}),...(moved?{lat:point!.lat,lng:point!.lng}:{}),...(walks&&walk!==(photo.walk??'')?{walk}:{}),...(author.trim()&&author.trim()!==(photo.author??'')?{author:author.trim()}:{}),...(timeToSave!==null?{capturedAt:timeToSave}:{})};
    const r=await fetch(`/api/photos/${photo.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await r.json();if(!r.ok)throw new Error(data.error||'Your changes could not be saved.');
+   if(timeToSave!==null&&data.warning)throw new Error(data.warning+' Your capture time is still here so you can try again.');
    let saved={...photo,...data.photo} as T,notice:string|undefined=data.warning;
    if(!sameTags(tags,photo.tags??emptyTags())){
     const t=await fetch(`/api/photos/${photo.id}/tags`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(tags)});
@@ -89,7 +94,9 @@ export default function PhotoEdit<T extends Editable>({photo,onSaved,onCancel,on
    {located&&<>
     <div className="field location-field">Exact spot<p className={'pin-status '+(point?'located':'')}>{point&&<><Check size={14}/>{point.lat.toFixed(4)}° N, {point.lng.toFixed(4)}° E</>}{pin&&<button type="button" className="pin-move" aria-pressed={pin.picking} onClick={()=>pin.picking?pin.onStop():pin.onStart()}><MapPin size={14}/>{pin.picking?'Click the map…':'Move pin on the map'}</button>}</p></div>
     <label className="field">Kreis or square<select value={places.some(x=>x.name===place)?place:''} onChange={e=>{const p=places.find(x=>x.name===e.target.value);setAutoPlace('');setPlace(p?p.name:photo.place??'')}}><option value="">{place&&!places.some(x=>x.name===place)?place:'Choose a Kreis or square'}</option><optgroup label="Squares">{squares.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup><optgroup label="Kreise">{districts.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</optgroup></select></label>
-    {time?<CaptureConditions time={time} onTime={setTime} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
+    <div ref={captureSection} className="photo-capture-edit">{time?<CaptureConditions time={time} onTime={value=>{setTime(value);setCaptureConfirmed(true)}} point={point}/>:<button type="button" className="add-capture-time" onClick={()=>setTime(zurichDateTime(Date.now()))}>Add when it was taken</button>}
+     {!photo.conditions&&time&&<><p className="conditions-note">This picture has no capture record. The upload date is a starting point; set or confirm when it was actually taken.</p><label className="capture-time-confirm"><input type="checkbox" checked={captureConfirmed} onChange={e=>setCaptureConfirmed(e.target.checked)}/><span>Use this date and time for sun and weather</span></label></>}
+    </div>
    </>}
    <TakenBy value={author} onChange={setAuthor} people={[...people,...(photo.author?[photo.author]:[])]}/>
    {walks&&<label className="field">Walk <span>(optional)</span><select value={walk} onChange={e=>setWalk(e.target.value)}><option value="">No specific walk</option>{walkChoices.map(w=><option key={w.id} value={w.id}>{w.title||'Untitled walk'}</option>)}</select></label>}
