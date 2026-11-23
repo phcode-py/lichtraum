@@ -1384,3 +1384,13 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .map-print-panel{width:330px}
 /* The name of the walk under the pointer */
 .walk-route-label{position:absolute;left:0;top:0;z-index:5;pointer-events:none;padding:4px 8px;background:#fff;color:var(--blue);font:400 10px/1.4 'Courier New',Courier,monospace;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;box-shadow:0 2px 8px #1717171a}
+/* Leaving tracing or a video in the small atlas picture */
+.atlas-picture-leave{position:absolute;z-index:6;top:8px;right:8px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:#fffffce6;color:var(--blue);cursor:pointer}
+.atlas-picture-leave:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* Close buttons are just the ×: no box, no frame, no background. A soft white glow keeps it legible on photographs. */
+.image-viewer .image-viewer-close,.image-viewer .image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close{background:none!important;border:0!important;box-shadow:none!important;outline:none!important;border-radius:0}
+.image-viewer .image-viewer-close svg,.image-viewer .image-viewer-download svg,.atlas-picture-leave svg,.gallery-lightbox-close svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #ffffffcc)}
+:is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):focus-visible{outline:none!important}
+:is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):hover svg{transform:scale(1.12)}
+:is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):focus-visible svg{transform:scale(1.18)}
