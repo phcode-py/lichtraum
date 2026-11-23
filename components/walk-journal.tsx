@@ -16,7 +16,7 @@ const day=(t:number)=>new Date(t).toLocaleDateString('en-GB',{day:'numeric',mont
 const time=(t:number)=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Zurich'});
 
 /** Walks tab in the sidebar: all recorded walks, or one walk with its impressions. */
-export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{tracingVisible:boolean;onTracingToggle:()=>void;filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
+export default function WalkJournal({onOpenPicture,tracingVisible,onTracingToggle,filmstripOpen,onFilmstrip,routeDraft,onRouteChange,momentForm,onImpressionSaved,walks,impressions,selected,loading,onSelect,onStart,onContinue,onSaved,onRemoved,onCreated,onAddMoment}:{onOpenPicture?:(id:string)=>void;tracingVisible:boolean;onTracingToggle:()=>void;filmstripOpen:boolean;onFilmstrip:()=>void;momentForm?:ReactNode;onImpressionSaved:(p:Impression)=>void;routeDraft:WalkRouteDraft|null;onRouteChange:(draft:WalkRouteDraft|null)=>void;onCreated:(walk:Walk)=>void;onAddMoment:(walk:Walk)=>void;walks:Walk[];impressions:Impression[];selected:string|null;loading:boolean;onSelect:(id:string|null)=>void;onStart:()=>void;onContinue:(w:Walk)=>void;onSaved:(walk:Walk)=>void;onRemoved:(id:string)=>void}){
  const [editingMoment,setEditingMoment]=useState<string|null>(null),[revealedMoment,setRevealedMoment]=useState<string|null>(null);
  const [addingPast,setAddingPast]=useState(false);
  const [editing,setEditing]=useState<string|null>(null);
@@ -41,7 +41,7 @@ export default function WalkJournal({tracingVisible,onTracingToggle,filmstripOpe
    {momentForm}
    <section className="walk-stops">
     {!pins.length&&<p className="walk-empty-note">No impressions on this walk.</p>}
-    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&canEditPhoto(p)?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={canEditPhoto(p)?()=>setEditingMoment(p.id):undefined}/>}</div>)}
+    {pins.map(p=><div className="walk-stop-entry" key={p.id}>{editingMoment===p.id&&canEditPhoto(p)?<PhotoEdit photo={{...p,caption:p.caption??''}} onCancel={()=>setEditingMoment(null)} onSaved={photo=>{onImpressionSaved(photo);setEditingMoment(null)}}/>:<AtlasPictureCard photo={{...p,caption:p.caption??'',lat:p.lat??NaN,lng:p.lng??NaN}} expanded={revealedMoment===p.id} onToggle={()=>setRevealedMoment(revealedMoment===p.id?null:p.id)} onEdit={canEditPhoto(p)?()=>setEditingMoment(p.id):undefined} onOpen={onOpenPicture?()=>onOpenPicture(p.id):undefined}/>}</div>)}
    </section>
   </div>;
  }

@@ -10,7 +10,7 @@ import PhotoInformation from './photo-information';
 import {useImageViewer} from './image-viewer';
 
 /** The atlas stays image-first; recorded information unfolds only on request. */
-export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemove,favourite=false,favouriteBy='',onFavourite}:{photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void;favourite?:boolean;favouriteBy?:string;onFavourite?:()=>void}){
+export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemove,favourite=false,favouriteBy='',onFavourite,onOpen}:{onOpen?:()=>void;photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void;favourite?:boolean;favouriteBy?:string;onFavourite?:()=>void}){
  const openImage=useImageViewer();
  const[tracing,setTracing]=useState(false),[playing,setPlaying]=useState(false),tracingRef=useRef<PhotoTracingHandle>(null);
  /** Back to the picture: unsaved drawing is saved first, so leaving never loses lines. */
@@ -20,7 +20,7 @@ export default function AtlasPictureCard({photo,expanded,onToggle,onEdit,onRemov
  useEffect(()=>{if(!tracing&&!playing)return;const key=(e:KeyboardEvent)=>{if(e.key==='Escape'&&!(e.target as HTMLElement)?.closest?.('input,textarea')){e.preventDefault();e.stopPropagation();leaveRef.current()}};window.addEventListener('keydown',key,true);return()=>window.removeEventListener('keydown',key,true)},[tracing,playing]);
  const detailsId='atlas-info-'+photo.id;
  const label=photo.title.trim()||'Untitled photograph';
- function view(){if(photo.mediaType==='video')onToggle();else openImage({url:photo.url,title:label})}
+ function view(){if(photo.mediaType==='video')onToggle();else if(onOpen)onOpen();else openImage({url:photo.url,title:label})}
  return <article data-photo-id={photo.id} className={'atlas-picture-card'+(expanded?' info-open':'')+(tracing||playing?' media-active':'')}>
   <div className="atlas-picture-surface">
    {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video" controls/>:tracing?<PhotoTracing photo={photo} tracingRef={tracingRef}/>:<button type="button" className="atlas-picture-toggle" aria-label={(photo.mediaType==='video'?'Photograph information for ':'Enlarge ')+label} aria-controls={photo.mediaType==='video'?detailsId:undefined} onClick={view}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType}/></button>}
