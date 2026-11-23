@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {Download,Pencil,PenLine,Trash2,X} from 'lucide-react';
+import {Download,Pause,Pencil,PenLine,Play,Trash2,X} from 'lucide-react';
 import {downloadMedia} from '@/lib/download';
 import AtlasMedia from './atlas-media';
 import FavouriteStar from './favourite-star';
@@ -12,7 +12,7 @@ import {useImageViewer} from './image-viewer';
 /** The atlas stays image-first; recorded information unfolds only on request. */
 export default function AtlasPictureCard({photo,walkTitle,expanded,onToggle,onEdit,onRemove,favourite=false,favouriteBy='',onFavourite,onOpen}:{walkTitle?:string;onOpen?:()=>void;photo:GalleryPhoto;expanded:boolean;onToggle:()=>void;onEdit?:()=>void;onRemove?:()=>void;favourite?:boolean;favouriteBy?:string;onFavourite?:()=>void}){
  const openImage=useImageViewer();
- const[tracing,setTracing]=useState(false),[playing,setPlaying]=useState(false),tracingRef=useRef<PhotoTracingHandle>(null);
+ const[tracing,setTracing]=useState(false),[playing,setPlaying]=useState(false),tracingRef=useRef<PhotoTracingHandle>(null),[paused,setPaused]=useState(false);
  /** Back to the picture: unsaved drawing is saved first, so leaving never loses lines. */
  async function leave(){if(tracing&&tracingRef.current?.hasPending()&&!await tracingRef.current.savePending())return;setTracing(false);setPlaying(false)}
  const leaveRef=useRef(leave);
@@ -23,11 +23,11 @@ export default function AtlasPictureCard({photo,walkTitle,expanded,onToggle,onEd
  function view(){if(photo.mediaType==='video')onToggle();else if(onOpen)onOpen();else openImage({url:photo.url,title:label})}
  return <article data-photo-id={photo.id} className={'atlas-picture-card'+(expanded?' info-open':'')+(tracing||playing?' media-active':'')}>
   <div className="atlas-picture-surface" onClick={event=>{if(!tracing&&!playing&&!(event.target as HTMLElement).closest('button,a'))view()}}>
-   {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video"/>:tracing?<PhotoTracing photo={photo} tracingRef={tracingRef}/>:<button type="button" className="atlas-picture-toggle" aria-label={(photo.mediaType==='video'?'Photograph information for ':'Enlarge ')+label} aria-controls={photo.mediaType==='video'?detailsId:undefined} onClick={view}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType}/></button>}
+   {playing&&photo.mediaType==='video'?<AtlasMedia url={photo.url} title={label} mediaType="video" paused={paused}/>:tracing?<PhotoTracing photo={photo} tracingRef={tracingRef}/>:<button type="button" className="atlas-picture-toggle" aria-label={(photo.mediaType==='video'?'Photograph information for ':'Enlarge ')+label} aria-controls={photo.mediaType==='video'?detailsId:undefined} onClick={view}><AtlasMedia url={photo.url} title={label} mediaType={photo.mediaType} paused={paused}/></button>}
 
   {!tracing&&!playing&&<section id={detailsId} className="atlas-picture-info" aria-label="Photograph information">
    <PhotoInformation photo={photo} walkTitle={walkTitle}/>
-   <div className="atlas-picture-actions">{photo.mediaType!=='video'&&<button type="button" aria-label="Trace photograph" aria-pressed={tracing} onClick={()=>{setTracing(true);onToggle()}}><PenLine size={13}/></button>}{onEdit&&<button type="button" aria-label={'Edit '+label} onClick={onEdit}><Pencil size={12}/></button>}{onRemove&&<button type="button" aria-label={'Remove '+label} onClick={onRemove}><Trash2 size={12}/></button>}{!photo.source&&<button type="button" aria-label={'Download '+label} title="Download" onClick={()=>downloadMedia(photo.url,label)}><Download size={13}/></button>}{photo.source&&<a href={photo.source} target="_blank" rel="noreferrer">Source ↗</a>}</div>
+   <div className="atlas-picture-actions">{photo.mediaType==='video'&&<button type="button" aria-label={paused?'Play video':'Pause video'} title={paused?'Play':'Pause'} aria-pressed={paused} onClick={()=>setPaused(v=>!v)}>{paused?<Play size={13}/>:<Pause size={13}/>}</button>}{photo.mediaType!=='video'&&<button type="button" aria-label="Trace photograph" aria-pressed={tracing} onClick={()=>{setTracing(true);onToggle()}}><PenLine size={13}/></button>}{onEdit&&<button type="button" aria-label={'Edit '+label} onClick={onEdit}><Pencil size={12}/></button>}{onRemove&&<button type="button" aria-label={'Remove '+label} onClick={onRemove}><Trash2 size={12}/></button>}{!photo.source&&<button type="button" aria-label={'Download '+label} title="Download" onClick={()=>downloadMedia(photo.url,label)}><Download size={13}/></button>}{photo.source&&<a href={photo.source} target="_blank" rel="noreferrer">Source ↗</a>}</div>
   </section>}
   {(tracing||playing)&&<button type="button" className="atlas-picture-leave" aria-label={tracing?'Close tracing':'Close video'} title={tracing?'Close tracing':'Close video'} onClick={leave}><X size={16}/></button>}
   {!tracing&&!playing&&onFavourite&&<FavouriteStar active={favourite} by={favouriteBy} title={label} onToggle={onFavourite}/>}

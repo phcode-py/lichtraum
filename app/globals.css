@@ -1447,15 +1447,3 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 .route-drawing .photo-marker,.route-drawing .chosen-point{opacity:.28!important;pointer-events:none!important;transition:opacity .2s}
 .walk-map-drawing-tools>span small{display:block;margin-top:3px;font:400 9px/1.5 'Courier New',Courier,monospace;color:#8b8b81}
 
-/* Small videos: play/pause and a time bar, only while pointing at the video. */
-.video-hover-controls{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .2s}
-:is(.atlas-video,.atlas-picture-card,.gallery-card):hover .video-hover-controls,.video-hover-controls:focus-within{opacity:1}
-.video-hover-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:#fffffce6;color:var(--blue);cursor:pointer;pointer-events:auto;box-shadow:0 4px 16px #17171726}
-.video-hover-play svg{margin-left:2px}
-.video-hover-play:hover{transform:translate(-50%,-50%) scale(1.06)}
-.video-hover-bar{position:absolute;left:10px;right:10px;bottom:46px;display:flex;align-items:center;gap:8px;pointer-events:auto;padding:6px 8px;background:#fffffce0}
-.video-hover-bar span{flex:none;font:400 9px/1 'Courier New',Courier,monospace;color:#4f4f46;font-variant-numeric:tabular-nums}
-.video-hover-bar input{flex:1;min-width:0;height:14px;margin:0;appearance:none;-webkit-appearance:none;background:linear-gradient(90deg,var(--blue) var(--progress),#d9dccf var(--progress)) center/100% 3px no-repeat;cursor:pointer}
-.video-hover-bar input::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;background:var(--blue);border:2px solid #fff}
-.video-hover-bar input::-moz-range-thumb{width:9px;height:9px;border-radius:50%;background:var(--blue);border:2px solid #fff}
-@media(hover:none){.video-hover-controls{opacity:1}.video-hover-bar{display:none}}
