@@ -1394,3 +1394,14 @@ button.paper-reference{display:block;width:100%;padding:0;border:0;background:tr
 :is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):focus-visible{outline:none!important}
 :is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):hover svg{transform:scale(1.12)}
 :is(.image-viewer-close,.image-viewer-download,.atlas-picture-leave,.gallery-lightbox-close,.gallery-edit-close,.detail-close,.section-close):focus-visible svg{transform:scale(1.18)}
+/* Details: download and edit as icons in one row, left of the close button. */
+.gallery-lightbox-notes .gallery-lightbox-actions{flex-direction:row;align-items:center;gap:14px;margin-right:4px}
+.gallery-lightbox-notes .gallery-lightbox-actions>button{padding:4px;color:var(--blue)}
+.gallery-lightbox-notes .gallery-lightbox-actions>button:hover svg{transform:scale(1.12)}
+/* Picture tags read like Working notes tags: a quiet line with a tag icon. */
+.photo-tag-line .paper-tags-trigger{background:none;border:0;cursor:pointer}
+.photo-tag-line .paper-tags-trigger.is-static{color:#77776a;cursor:default;margin:0}
+.gallery-lightbox-notes .photo-tag-line h3{margin-bottom:8px}
+/* Download and edit sit on the same line as the close button. */
+.gallery-lightbox-notes .gallery-lightbox-actions{position:absolute;top:20px;right:64px;z-index:5;margin:0}
+.gallery-lightbox-notes .gallery-lightbox-heading{padding-right:150px}
